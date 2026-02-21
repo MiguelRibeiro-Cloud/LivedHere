@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "title": "LivedHere",
+    "description": "Know before you move. Because where you live matters."
+  },
+  "home": {
+    "tagline": "Know before you move. Because where you live matters.",
+    "searchPlaceholder": "Search city, area, street or building number",
+    "searchCta": "Search",
+    "browseMap": "Browse map",
+    "recent": "Recent approved reviews"
+  },
+  "nav": {
+    "home": "Home",
+    "search": "Search",
+    "map": "Map",
+    "submit": "Submit review",
+    "account": "Account",
+    "admin": "Admin",
+    "login": "Login"
+  },
+  "review": {
+    "piiError": "Please remove personal details (unit, names, contact info).",
+    "submitted": "Review submitted for moderation.",
+    "status": "Status",
+    "trackingCode": "Tracking code"
+  }
+}

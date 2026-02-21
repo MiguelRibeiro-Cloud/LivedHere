@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "title": "LivedHere",
+    "description": "Know before you move. Because where you live matters."
+  },
+  "home": {
+    "tagline": "Know before you move. Because where you live matters.",
+    "searchPlaceholder": "Pesquisar cidade, área, rua ou número",
+    "searchCta": "Pesquisar",
+    "browseMap": "Ver mapa",
+    "recent": "Avaliações aprovadas recentes"
+  },
+  "nav": {
+    "home": "Início",
+    "search": "Pesquisar",
+    "map": "Mapa",
+    "submit": "Submeter avaliação",
+    "account": "Conta",
+    "admin": "Admin",
+    "login": "Entrar"
+  },
+  "review": {
+    "piiError": "Remova dados pessoais (fração/unidade, nomes, contactos).",
+    "submitted": "Avaliação submetida para moderação.",
+    "status": "Estado",
+    "trackingCode": "Código de acompanhamento"
+  }
+}
