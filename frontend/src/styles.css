@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-sand text-slate-800;
+}
+
+.card {
+  @apply rounded-2xl bg-white p-5 shadow-sm;
+}
+
+.btn {
+  @apply rounded-xl bg-primary px-4 py-2 font-semibold text-white hover:opacity-90;
+}
+
+.btn-accent {
+  @apply rounded-xl bg-accent px-4 py-2 font-semibold text-white hover:opacity-90;
+}
+
+.input {
+  @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2;
+}
