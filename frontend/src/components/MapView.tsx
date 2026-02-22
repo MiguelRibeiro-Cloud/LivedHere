@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import { useEffect, useMemo, useRef } from 'react';
+import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -10,38 +10,80 @@ const icon = new L.Icon({
   iconAnchor: [12, 41]
 });
 
-type BuildingPin = {
+export type BuildingPin = {
   id: number;
   lat: number;
   lng: number;
   number?: number;
 };
 
-function AutoPan({ center, zoom }: { center: [number, number]; zoom: number }) {
+function AutoPan({
+  panTo,
+  panZoom
+}: {
+  panTo: [number, number] | null;
+  panZoom: number | null;
+}) {
   const map = useMap();
+  const lastKeyRef = useRef<string | null>(null);
+
+  const key = useMemo(() => {
+    if (!panTo) return null;
+    return `${panTo[0].toFixed(6)},${panTo[1].toFixed(6)}@${panZoom ?? ''}`;
+  }, [panTo, panZoom]);
 
   useEffect(() => {
-    map.flyTo(center, zoom, { duration: 0.6 });
-  }, [center, zoom, map]);
+    if (!panTo) return;
+    if (key && lastKeyRef.current === key) return;
+    lastKeyRef.current = key;
+    map.flyTo(panTo, panZoom ?? map.getZoom(), { duration: 0.6 });
+  }, [panTo, panZoom, map, key]);
 
+  return null;
+}
+
+function ReportCenter({ onCenterChange }: { onCenterChange?: (center: [number, number], zoom: number) => void }) {
+  useMapEvents({
+    moveend: (event) => {
+      if (!onCenterChange) return;
+      const center = event.target.getCenter();
+      onCenterChange([center.lat, center.lng], event.target.getZoom());
+    }
+  });
   return null;
 }
 
 export function MapView({
   buildings,
-  center = [38.7223, -9.1393],
-  zoom = 11
+  panTo = null,
+  panZoom = null,
+  onCenterChange,
+  onSelectBuilding
 }: {
   buildings: BuildingPin[];
-  center?: [number, number];
-  zoom?: number;
+  panTo?: [number, number] | null;
+  panZoom?: number | null;
+  onCenterChange?: (center: [number, number], zoom: number) => void;
+  onSelectBuilding?: (id: number) => void;
 }) {
   return (
-    <MapContainer center={center} zoom={zoom} className="h-[520px] w-full rounded-xl">
-      <AutoPan center={center} zoom={zoom} />
+    <MapContainer center={[38.7223, -9.1393]} zoom={11} className="h-[520px] w-full rounded-xl">
+      <AutoPan panTo={panTo} panZoom={panZoom} />
+      <ReportCenter onCenterChange={onCenterChange} />
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
       {buildings.map((building) => (
-        <Marker key={building.id} position={[building.lat, building.lng]} icon={icon}>
+        <Marker
+          key={building.id}
+          position={[building.lat, building.lng]}
+          icon={icon}
+          eventHandlers={
+            onSelectBuilding
+              ? {
+                  click: () => onSelectBuilding(building.id)
+                }
+              : undefined
+          }
+        >
           <Popup>
             Building #{building.id} {building.number ? `· ${building.number}` : ''}
           </Popup>

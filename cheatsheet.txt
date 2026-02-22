@@ -1,0 +1,62 @@
+LivedHere – local dev cheatsheet
+
+URLs
+- Frontend: http://localhost:5173
+- API health: http://localhost:8000/health
+- Admin login: http://localhost:5173/en/auth/login
+- Admin reviews: http://localhost:5173/en/admin/reviews
+
+Docker (recommended)
+- docker compose up --build
+  Use: first run, or after Dockerfile/docker-compose.yml changes.
+
+- docker compose up
+  Use: start containers again when images are already built.
+
+- docker compose up -d
+  Use: run in background.
+
+- docker compose logs -f
+  Use: tail logs for all services.
+
+- docker compose logs -f api
+  Use: tail API logs (look for errors, DEV_MAGIC_LINK, reload).
+
+- docker compose logs -f web
+  Use: tail frontend logs (Vite/HMR issues).
+
+- docker compose down
+  Use: stop all containers.
+
+- docker compose down -v
+  Use: stop + delete volumes (WIPES DB data!).
+
+Rebuild only what changed
+- docker compose up --build api
+  Use: after backend/requirements.txt changes or backend Dockerfile changes.
+
+- docker compose up --build web
+  Use: after frontend/package.json changes or frontend Dockerfile changes.
+
+Troubleshooting
+- docker compose ps
+  Use: check if services are healthy/running.
+
+- docker compose restart api
+  Use: restart API container (rare; code changes should auto-reload).
+
+Frontend without Docker (optional)
+- cd frontend
+- npm install
+  Use: first run or after package.json changes.
+
+- npm run dev
+  Use: run frontend with hot reload.
+
+Backend without Docker (optional)
+- cd backend
+- python -m venv .venv
+- .\.venv\Scripts\Activate.ps1
+- pip install -r requirements.txt
+- uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+  Use: run API with auto-reload.

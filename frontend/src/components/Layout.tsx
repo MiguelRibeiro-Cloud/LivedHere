@@ -41,9 +41,6 @@ export function Layout() {
             <Link className={navLinkClassName} to={`${base}/search`}>
               {t('search')}
             </Link>
-            <Link className={navLinkClassName} to={`${base}/map`}>
-              {t('map')}
-            </Link>
             <Link className="btn text-sm" to={`${base}/submit`}>
               {t('submit_review')}
             </Link>
@@ -94,9 +91,6 @@ export function Layout() {
           <nav id="mobile-nav" className="mt-3 grid gap-2 md:hidden">
             <Link className="rounded-lg px-3 py-2 text-sm font-medium text-ink/90 hover:bg-sand" to={`${base}/search`}>
               {t('search')}
-            </Link>
-            <Link className="rounded-lg px-3 py-2 text-sm font-medium text-ink/90 hover:bg-sand" to={`${base}/map`}>
-              {t('map')}
             </Link>
             <Link className="btn w-full text-center text-sm" to={`${base}/submit`}>
               {t('submit_review')}

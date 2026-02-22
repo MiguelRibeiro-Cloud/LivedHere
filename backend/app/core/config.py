@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     email_pass: str = Field(default="", alias="EMAIL_PASS")
     email_from: str = Field(default="noreply@livedhere.local", alias="EMAIL_FROM")
 
-    admin_email: str = Field(default="admin@livedhere.local", alias="ADMIN_EMAIL")
+    admin_email: str = Field(default="admin@livedhere.test", alias="ADMIN_EMAIL")
 
     captcha_provider: str = Field(default="none", alias="CAPTCHA_PROVIDER")
     captcha_secret: str = Field(default="", alias="CAPTCHA_SECRET")

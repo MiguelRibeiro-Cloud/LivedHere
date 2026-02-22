@@ -1,4 +1,5 @@
-import { FormEvent, useCallback, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { api } from '../api/client';
@@ -32,6 +33,8 @@ const ratingLabels: Record<keyof typeof initialRatings, string> = {
 
 export function SubmitPage() {
   const { t, i18n } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const placeParam = (searchParams.get('place') ?? '').trim();
   const [fromYear, setFromYear] = useState(2020);
   const [toYear, setToYear] = useState(2024);
   const [durationMonths, setDurationMonths] = useState(12);
@@ -41,18 +44,25 @@ export function SubmitPage() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [placeQuery, setPlaceQuery] = useState('');
   const [placeError, setPlaceError] = useState<string | null>(null);
-  const [placeResults, setPlaceResults] = useState<
-    Array<{ building_id: number; street: string; number: number; area: string; city: string; lat: number; lng: number }>
-  >([]);
-  const [selectedBuilding, setSelectedBuilding] = useState<
-    | {
-        building_id: number;
-        label: string;
-      }
-    | null
-  >(null);
+
+  type GeocodeResult = {
+    label: string;
+    country_code: string;
+    city_name: string;
+    area_name: string;
+    street_name: string;
+    lat: number;
+    lng: number;
+  };
+
+  const [placeResults, setPlaceResults] = useState<GeocodeResult[]>([]);
+  const [selectedStreet, setSelectedStreet] = useState<GeocodeResult | null>(null);
+  const [rangeStart, setRangeStart] = useState(10);
+  const [rangeEnd, setRangeEnd] = useState(30);
+  const [doorNumber, setDoorNumber] = useState<number | ''>('');
   const [errors, setErrors] = useState<{
     building?: string;
+    range?: string;
     fromYear?: string;
     toYear?: string;
     durationMonths?: string;
@@ -65,19 +75,15 @@ export function SubmitPage() {
     return (toYear - fromYear) * 12;
   }, [fromYear, toYear]);
 
-  const searchPlaces = useCallback(async () => {
-    const trimmed = placeQuery.trim();
+  const searchPlaces = useCallback(async (q?: string) => {
+    const trimmed = (q ?? placeQuery).trim();
     if (trimmed.length < 2) {
       setPlaceResults([]);
       return;
     }
     setPlaceError(null);
     try {
-      const response = await api.get<
-        Array<{ building_id: number; street: string; number: number; area: string; city: string; lat: number; lng: number }>
-      >('/search', {
-        params: { q: trimmed, verified_only: false, sort: 'recency' }
-      });
+      const response = await api.get<GeocodeResult[]>('/geocode', { params: { q: trimmed } });
       setPlaceResults(response.data);
       if (response.data.length === 0) {
         setPlaceError('No matches found. Try a broader search (city + street name).');
@@ -88,11 +94,33 @@ export function SubmitPage() {
     }
   }, [placeQuery]);
 
+  useEffect(() => {
+    if (!placeParam) return;
+    setPlaceQuery(placeParam);
+    void searchPlaces(placeParam);
+  }, [placeParam, searchPlaces]);
+
   function validate() {
     const next: typeof errors = {};
 
-    if (!selectedBuilding) {
-      next.building = 'Please search and select a place before submitting.';
+    if (!selectedStreet) {
+      next.building = 'Please search and select a street before submitting.';
+    }
+
+    const hasDoor = typeof doorNumber === 'number' && Number.isFinite(doorNumber);
+    if (!hasDoor) {
+      if (!Number.isFinite(rangeStart) || rangeStart < 1 || rangeStart > 99999) {
+        next.range = 'Please enter a start number between 1 and 99999.';
+      }
+      if (!Number.isFinite(rangeEnd) || rangeEnd < 1 || rangeEnd > 99999) {
+        next.range = 'Please enter an end number between 1 and 99999.';
+      }
+      if (!next.range && rangeEnd < rangeStart) {
+        next.range = 'End number should be the same as or after start number.';
+      }
+      if (!next.range && rangeEnd - rangeStart > 500) {
+        next.range = 'Please keep the range within 500 numbers.';
+      }
     }
 
     if (!Number.isFinite(fromYear) || fromYear < 1900 || fromYear > 2100) {
@@ -133,8 +161,21 @@ export function SubmitPage() {
     const effectiveComment = `${comment.trim()}\n\nStayed about ${durationMonths} month${durationMonths === 1 ? '' : 's'}.`;
 
     try {
+      const hasDoor = typeof doorNumber === 'number' && Number.isFinite(doorNumber);
+      const resolveResponse = await api.post<{ building_id: number }>('/places/resolve', {
+        country_code: selectedStreet!.country_code,
+        city_name: selectedStreet!.city_name,
+        area_name: selectedStreet!.area_name,
+        street_name: selectedStreet!.street_name,
+        street_number: hasDoor ? doorNumber : null,
+        range_start: hasDoor ? null : rangeStart,
+        range_end: hasDoor ? null : rangeEnd,
+        lat: selectedStreet!.lat,
+        lng: selectedStreet!.lng
+      });
+
       const response = await api.post('/reviews', {
-        building_id: selectedBuilding!.building_id,
+        building_id: resolveResponse.data.building_id,
         language_tag: i18n.language,
         lived_from_year: fromYear,
         lived_to_year: toYear,
@@ -171,25 +212,30 @@ export function SubmitPage() {
                   Find
                 </button>
               </div>
-              {selectedBuilding && (
+              {selectedStreet && (
                 <p className="mt-2 text-sm text-ink/70">
-                  Selected: <span className="font-semibold text-ink">{selectedBuilding.label}</span>
+                  Selected: <span className="font-semibold text-ink">{selectedStreet.label}</span>
                 </p>
               )}
               {errors.building && <p className="mt-1 text-sm text-red-700">{errors.building}</p>}
+              {errors.range && <p className="mt-1 text-sm text-red-700">{errors.range}</p>}
               {placeError && <p className="mt-2 text-sm text-ink/70">{placeError}</p>}
 
               {placeResults.length > 0 && (
                 <div className="mt-3 grid gap-2">
                   {placeResults.slice(0, 6).map((item) => {
-                    const label = `${item.street}, ${item.number} · ${item.area}, ${item.city}`;
+                    const label = item.label;
+                    const key = `${item.country_code}-${item.city_name}-${item.street_name}-${item.lat}-${item.lng}`;
                     return (
                       <button
-                        key={item.building_id}
+                        key={key}
                         type="button"
                         className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left hover:bg-sand"
                         onClick={() => {
-                          setSelectedBuilding({ building_id: item.building_id, label });
+                          setSelectedStreet(item);
+                          setDoorNumber('');
+                          setRangeStart(10);
+                          setRangeEnd(30);
                           setPlaceResults([]);
                         }}
                       >
@@ -199,7 +245,37 @@ export function SubmitPage() {
                   })}
                 </div>
               )}
-              <p className="mt-2 text-xs text-ink/60">Tip: If you can’t find the place, try searching by city + street name.</p>
+
+              {selectedStreet && (
+                <div className="mt-4 grid gap-3 rounded-xl border border-slate-200 bg-white p-4">
+                  <p className="text-sm font-semibold text-ink">Choose a target on this street</p>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <label className="text-sm text-ink/80">
+                      Door number (optional)
+                      <input
+                        className="input mt-1"
+                        type="number"
+                        value={doorNumber}
+                        onChange={(e) => setDoorNumber(e.target.value === '' ? '' : Number(e.target.value))}
+                        placeholder="e.g. 12"
+                      />
+                    </label>
+                    <label className="text-sm text-ink/80">
+                      Range start
+                      <input className="input mt-1" type="number" value={rangeStart} onChange={(e) => setRangeStart(Number(e.target.value))} />
+                    </label>
+                    <label className="text-sm text-ink/80">
+                      Range end
+                      <input className="input mt-1" type="number" value={rangeEnd} onChange={(e) => setRangeEnd(Number(e.target.value))} />
+                    </label>
+                  </div>
+                  <p className="text-xs text-ink/60">
+                    Leave door number blank to review a portion of the street (we’ll store it as a range).
+                  </p>
+                </div>
+              )}
+
+              <p className="mt-2 text-xs text-ink/60">Tip: If you can’t find the street, try searching by city + street name.</p>
             </div>
 
             <div className="md:col-span-1">

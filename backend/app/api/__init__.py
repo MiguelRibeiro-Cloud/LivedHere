@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.admin import router as admin_router
 from app.api.auth import router as auth_router
+from app.api.geocode import router as geocode_router
 from app.api.map import router as map_router
 from app.api.places import router as places_router
 from app.api.reports import router as reports_router
@@ -17,4 +18,5 @@ router.include_router(reviews_router, tags=["reviews"])
 router.include_router(admin_router, tags=["admin"])
 router.include_router(reports_router, tags=["reports"])
 router.include_router(search_router, tags=["search"])
+router.include_router(geocode_router, tags=["geocode"])
 router.include_router(map_router, tags=["map"])

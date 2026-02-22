@@ -5,7 +5,16 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 
 type Review = { id: number; score: number; comment: string; verified: boolean; created_at: string };
-type BuildingResponse = { id: number; street_number: number; reviews: Review[] };
+type BuildingResponse = {
+  id: number;
+  street: string;
+  area: string;
+  city: string;
+  street_number: number;
+  range_start?: number | null;
+  range_end?: number | null;
+  reviews: Review[];
+};
 
 export function BuildingPage() {
   const { t } = useTranslation();
@@ -29,7 +38,11 @@ export function BuildingPage() {
   return (
     <main className="space-y-3">
       <section className="card">
-        <h1 className="text-xl font-semibold">Building #{data.id}</h1>
+        <h1 className="text-xl font-semibold">
+          {data.street},{' '}
+          {data.range_start != null && data.range_end != null ? `${data.range_start}–${data.range_end}` : data.street_number}
+        </h1>
+        <p className="mt-1 text-sm text-ink/70">{data.area}, {data.city}</p>
       </section>
       {data.reviews.map((review) => (
         <article key={review.id} className="card space-y-2">
