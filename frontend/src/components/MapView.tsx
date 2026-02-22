@@ -1,4 +1,5 @@
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import { useEffect } from 'react';
+import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -16,9 +17,28 @@ type BuildingPin = {
   number?: number;
 };
 
-export function MapView({ buildings }: { buildings: BuildingPin[] }) {
+function AutoPan({ center, zoom }: { center: [number, number]; zoom: number }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.flyTo(center, zoom, { duration: 0.6 });
+  }, [center, zoom, map]);
+
+  return null;
+}
+
+export function MapView({
+  buildings,
+  center = [38.7223, -9.1393],
+  zoom = 11
+}: {
+  buildings: BuildingPin[];
+  center?: [number, number];
+  zoom?: number;
+}) {
   return (
-    <MapContainer center={[38.7223, -9.1393]} zoom={11} className="h-[500px] w-full rounded-2xl">
+    <MapContainer center={center} zoom={zoom} className="h-[520px] w-full rounded-xl">
+      <AutoPan center={center} zoom={zoom} />
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
       {buildings.map((building) => (
         <Marker key={building.id} position={[building.lat, building.lng]} icon={icon}>

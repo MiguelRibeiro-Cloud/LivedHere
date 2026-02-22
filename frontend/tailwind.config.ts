@@ -5,9 +5,10 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: '#3A9D98',
-        sand: '#F5EEE2',
-        accent: '#EB8D47'
+        primary: '#2FA4A9',
+        sand: '#F6EFE6',
+        accent: '#F4A261',
+        ink: '#2D3748'
       },
       borderRadius: {
         xl: '0.9rem',

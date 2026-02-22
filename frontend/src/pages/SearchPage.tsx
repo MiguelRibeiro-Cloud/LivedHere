@@ -1,5 +1,5 @@
-import { FormEvent, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { api } from '../api/client';
@@ -17,22 +17,42 @@ type SearchResult = {
 export function SearchPage() {
   const { t } = useTranslation();
   const { locale = 'en' } = useParams();
+  const [searchParams] = useSearchParams();
+  const qParam = (searchParams.get('q') ?? '').trim();
   const [query, setQuery] = useState('');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
 
+  const runSearch = useCallback(
+    async (q: string, verified: boolean) => {
+      const response = await api.get<SearchResult[]>('/search', {
+        params: { q, verified_only: verified, sort: 'recency' }
+      });
+      setResults(response.data);
+    },
+    []
+  );
+
   async function onSearch(event: FormEvent) {
     event.preventDefault();
-    const response = await api.get<SearchResult[]>('/search', {
-      params: { q: query, verified_only: verifiedOnly, sort: 'recency' }
-    });
-    setResults(response.data);
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setResults([]);
+      return;
+    }
+    await runSearch(trimmed, verifiedOnly);
   }
+
+  useEffect(() => {
+    if (!qParam) return;
+    setQuery(qParam);
+    void runSearch(qParam, verifiedOnly);
+  }, [qParam, runSearch]);
 
   return (
     <main className="space-y-4">
       <form onSubmit={onSearch} className="card space-y-3">
-        <input className="input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rua, cidade, área" />
+        <input className="input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by street, area, or city…" />
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={verifiedOnly} onChange={(event) => setVerifiedOnly(event.target.checked)} />
           {t('verified_only')}

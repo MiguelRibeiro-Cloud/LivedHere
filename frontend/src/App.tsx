@@ -12,7 +12,6 @@ import { BuildingPage } from './pages/BuildingPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { MapPage } from './pages/MapPage';
-import { SearchPage } from './pages/SearchPage';
 import { StatusPage } from './pages/StatusPage';
 import { SubmitPage } from './pages/SubmitPage';
 
@@ -23,10 +22,11 @@ export function App() {
       <Route path="/:locale" element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="home" element={<HomePage />} />
-        <Route path="search" element={<SearchPage />} />
+        <Route path="search" element={<MapPage />} />
         <Route path="map" element={<MapPage />} />
         <Route path="building/:id" element={<BuildingPage />} />
         <Route path="submit" element={<SubmitPage />} />
+        <Route path="status" element={<StatusPage />} />
         <Route path="status/:code" element={<StatusPage />} />
         <Route path="auth/login" element={<LoginPage />} />
         <Route element={<RequireAuth />}>
