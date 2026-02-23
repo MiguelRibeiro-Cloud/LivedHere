@@ -20,12 +20,12 @@ type SearchResult = {
 
 type GeocodeResult = {
   label: string;
-  country_code: string;
-  city_name: string;
-  area_name: string;
-  street_name: string;
   lat: number;
   lng: number;
+  country_code?: string;
+  city_name?: string;
+  area_name?: string;
+  street_name?: string;
 };
 
 export function MapPage() {
@@ -62,30 +62,39 @@ export function MapPage() {
       setError(null);
       setEmptyNote(null);
       setGeoResults([]);
+      setActiveId(null);
       try {
-        const response = await api.get<SearchResult[]>('/search', {
-          params: { q, verified_only: verified, sort: 'recency' }
-        });
-        setResults(response.data);
-        const first = response.data[0] ?? null;
+        const [dbRes, geoRes] = await Promise.allSettled([
+          api.get<SearchResult[]>('/search', { params: { q, verified_only: verified, sort: 'recency' } }),
+          api.get<GeocodeResult[]>('/geocode', { params: { q } }),
+        ]);
+
+        const list = dbRes.status === 'fulfilled' ? dbRes.value.data : [];
+        const geoItems = geoRes.status === 'fulfilled' ? geoRes.value.data : [];
+
+        setResults(list);
+        setGeoResults(geoItems);
+
+        const first = list[0] ?? null;
+        const geoFirst = geoItems[0] ?? null;
+
         setActiveId(first?.building_id ?? null);
-        if (first) {
+
+        if (geoFirst) {
+          setPanTo([geoFirst.lat, geoFirst.lng]);
+          setPanZoom(15);
+          setActiveId(null);
+          if (list.length === 0) {
+            setEmptyNote('No reviewed places found yet. Pick a street below to submit the first review.');
+          }
+        } else if (first) {
           setPanTo([first.lat, first.lng]);
           setPanZoom(15);
         } else {
-          const geo = await api.get<GeocodeResult[]>('/geocode', { params: { q } });
-          setGeoResults(geo.data);
-          const geoFirst = geo.data[0] ?? null;
-          if (geoFirst) {
-            setPanTo([geoFirst.lat, geoFirst.lng]);
-            setPanZoom(15);
-            setEmptyNote('No reviewed places found yet. Pick a street below to submit the first review.');
-          } else {
-            // IMPORTANT: do NOT pan back to the default view on empty results.
-            setPanTo(null);
-            setPanZoom(null);
-            setEmptyNote('No matches found. Try a broader search (city + street name).');
-          }
+          // IMPORTANT: do NOT pan back to the default view on empty results.
+          setPanTo(null);
+          setPanZoom(null);
+          setEmptyNote('No matches found. Try a broader search (city + street name).');
         }
       } catch {
         setError('Could not search right now. Please try again.');
@@ -190,79 +199,87 @@ export function MapPage() {
 
       <section className="grid gap-4 lg:grid-cols-[420px_1fr]">
         <div className="space-y-3">
-          {results.length > 0 ? (
-            <section className="card">
-              <h2 className="text-sm font-semibold text-ink">Results</h2>
-              <div className="mt-3 space-y-2">
-                {results.slice(0, 12).map((item) => (
-                  <button
-                    key={item.building_id}
-                    type="button"
-                    onClick={() => onSelectById(item.building_id)}
-                    className={
-                      item.building_id === activeId
-                        ? 'w-full rounded-xl border border-primary/30 bg-sand px-4 py-3 text-left'
-                        : 'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left hover:bg-sand'
-                    }
-                  >
-                    <p className="font-semibold text-ink">
-                      {item.street},{' '}
-                      {item.range_start != null && item.range_end != null ? `${item.range_start}–${item.range_end}` : item.number}
-                    </p>
-                    <p className="mt-1 text-sm text-ink/70">
-                      {item.area}, {item.city} ·{' '}
-                      {item.review_count > 0 && item.avg_score != null ? (
-                        <span>⭐ {item.avg_score} ({item.review_count})</span>
-                      ) : (
-                        <span>No reviews yet</span>
-                      )}
-                    </p>
-                    <Link
-                      className="mt-2 inline-block text-sm font-semibold text-primary underline"
-                      to={`/${locale}/building/${item.building_id}`}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      View building
-                    </Link>
-                  </button>
-                ))}
-              </div>
-            </section>
-          ) : geoResults.length > 0 ? (
-            <section className="card">
-              <h2 className="text-sm font-semibold text-ink">Streets</h2>
-              <p className="mt-2 text-sm text-ink/70">These streets don’t have reviews yet. Submit the first one.</p>
-              <div className="mt-3 space-y-2">
-                {geoResults.slice(0, 8).map((item) => {
-                  const key = `${item.country_code}-${item.city_name}-${item.street_name}-${item.lat}-${item.lng}`;
-                  return (
-                    <div key={key} className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                      <button
-                        type="button"
-                        className="w-full text-left"
-                        onClick={() => {
-                          setPanTo([item.lat, item.lng]);
-                          setPanZoom(15);
-                        }}
-                      >
-                        <p className="font-semibold text-ink">{item.label}</p>
-                        <p className="mt-1 text-sm text-ink/70">No reviews yet</p>
-                      </button>
-                      <Link
-                        className="mt-2 inline-block text-sm font-semibold text-primary underline"
-                        to={`/${locale}/submit?place=${encodeURIComponent(item.label)}`}
-                      >
-                        Submit review
-                      </Link>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          ) : (
+          {results.length === 0 && geoResults.length === 0 ? (
             <section className="card">
               <p className="text-sm text-ink/70">Search to see matching places and jump the map.</p>
             </section>
+          ) : (
+            <>
+              {results.length > 0 && (
+                <section className="card">
+                  <h2 className="text-sm font-semibold text-ink">Results</h2>
+                  <div className="mt-3 space-y-2">
+                    {results.slice(0, 12).map((item) => (
+                      <button
+                        key={item.building_id}
+                        type="button"
+                        onClick={() => onSelectById(item.building_id)}
+                        className={
+                          item.building_id === activeId
+                            ? 'w-full rounded-xl border border-primary/30 bg-sand px-4 py-3 text-left'
+                            : 'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left hover:bg-sand'
+                        }
+                      >
+                        <p className="font-semibold text-ink">
+                          {item.street},{' '}
+                          {item.range_start != null && item.range_end != null
+                            ? `${item.range_start}–${item.range_end}`
+                            : item.number}
+                        </p>
+                        <p className="mt-1 text-sm text-ink/70">
+                          {item.area}, {item.city} ·{' '}
+                          {item.review_count > 0 && item.avg_score != null ? (
+                            <span>⭐ {item.avg_score.toFixed(1)} ({item.review_count})</span>
+                          ) : (
+                            <span>No reviews yet</span>
+                          )}
+                        </p>
+                        <Link
+                          className="mt-2 inline-block text-sm font-semibold text-primary underline"
+                          to={`/${locale}/building/${item.building_id}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          View building
+                        </Link>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {geoResults.length > 0 && (
+                <section className="card">
+                  <h2 className="text-sm font-semibold text-ink">Streets</h2>
+                  <p className="mt-2 text-sm text-ink/70">Map jumps here even if there are no reviews yet.</p>
+                  <div className="mt-3 space-y-2">
+                    {geoResults.slice(0, 8).map((item) => {
+                      const key = `${item.country_code ?? ''}-${item.city_name ?? ''}-${item.street_name ?? ''}-${item.lat}-${item.lng}`;
+                      return (
+                        <div key={key} className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                          <button
+                            type="button"
+                            className="w-full text-left"
+                            onClick={() => {
+                              setPanTo([item.lat, item.lng]);
+                              setPanZoom(15);
+                            }}
+                          >
+                            <p className="font-semibold text-ink">{item.label}</p>
+                            <p className="mt-1 text-sm text-ink/70">No reviews yet</p>
+                          </button>
+                          <Link
+                            className="mt-2 inline-block text-sm font-semibold text-primary underline"
+                            to={`/${locale}/submit?place=${encodeURIComponent(item.label)}`}
+                          >
+                            Submit review
+                          </Link>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+            </>
           )}
         </div>
 

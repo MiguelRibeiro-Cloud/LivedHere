@@ -1,7 +1,10 @@
 type StarRatingProps = {
   value: number;
-  onChange: (value: number) => void;
+  onChange?: (value: number) => void;
   label: string;
+  readOnly?: boolean;
+  minLabel?: string;
+  maxLabel?: string;
 };
 
 function Star({ filled }: { filled: boolean }) {
@@ -19,17 +22,30 @@ function Star({ filled }: { filled: boolean }) {
   );
 }
 
-export function StarRating({ value, onChange, label }: StarRatingProps) {
+export function StarRating({ value, onChange, label, readOnly: readOnlyProp, minLabel, maxLabel }: StarRatingProps) {
+  const readOnly = Boolean(readOnlyProp) || !onChange;
+
+  const helperText = !readOnly
+    ? `1 = ${minLabel ?? 'very bad'}, 5 = ${maxLabel ?? 'very good'}`
+    : null;
+
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="min-w-0">
         <p className="text-sm font-medium text-ink">{label}</p>
-        <p className="text-xs text-ink/60">1 = low, 5 = high</p>
+        {helperText && <p className="text-xs text-ink/60">{helperText}</p>}
       </div>
-      <div className="flex items-center gap-1" role="radiogroup" aria-label={label}>
+      <div className="flex items-center gap-1" role={readOnly ? 'img' : 'radiogroup'} aria-label={label}>
         {Array.from({ length: 5 }).map((_, index) => {
           const starValue = index + 1;
           const filled = starValue <= value;
+          if (readOnly) {
+            return (
+              <span key={starValue} className="p-1" aria-hidden="true">
+                <Star filled={filled} />
+              </span>
+            );
+          }
           return (
             <button
               key={starValue}
@@ -44,6 +60,7 @@ export function StarRating({ value, onChange, label }: StarRatingProps) {
             </button>
           );
         })}
+        {readOnly && <span className="ml-2 text-xs font-semibold text-ink/60">{value}/5</span>}
       </div>
     </div>
   );

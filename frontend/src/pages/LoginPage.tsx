@@ -44,7 +44,8 @@ export function LoginPage() {
       const detail = err?.response?.data?.detail;
       const status = err?.response?.status;
       if (status && detail) {
-        setMessage(`Could not sign in (${status}): ${detail}`);
+        const rendered = typeof detail === 'string' ? detail : JSON.stringify(detail);
+        setMessage(`Could not sign in (${status}): ${rendered}`);
         return;
       }
       if (status) {
@@ -57,31 +58,26 @@ export function LoginPage() {
 
   return (
     <main className="card space-y-3">
+      <section className="rounded-xl border border-slate-200 bg-white p-4">
+        <p className="text-sm font-semibold text-ink">Access modes (temporary)</p>
+        <p className="mt-1 text-xs text-ink/60">Pick how you want to use the app during development.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button className="btn" type="button" onClick={() => navigate(`/${locale}/search`)}>
+            Continue anonymously
+          </button>
+          <button className="btn" type="button" onClick={() => void devLoginAs('user@example.com', `/${locale}/account`)}>
+            Login as user
+          </button>
+          <button className="btn" type="button" onClick={() => void devLoginAs('admin@example.com', `/${locale}/admin/reviews`)}>
+            Login as admin
+          </button>
+        </div>
+      </section>
+
       <form onSubmit={requestLink} className="space-y-2">
         <input className="input" value={email} onChange={(event) => setEmail(event.target.value)} placeholder={t('email')} />
         <button className="btn" type="submit">{t('request_magic')}</button>
       </form>
-
-      <section className="rounded-xl border border-slate-200 bg-white p-4">
-        <p className="text-sm font-semibold text-ink">Temporary shortcuts</p>
-        <p className="mt-1 text-xs text-ink/60">These buttons use the magic link flow to sign you in instantly.</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="btn"
-            onClick={() => void devLoginAs('admin@livedhere.test', `/${locale}/admin/reviews`)}
-          >
-            Login as admin → Reviews
-          </button>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => void devLoginAs('user@livedhere.test', `/${locale}/account`)}
-          >
-            Login as user → Account
-          </button>
-        </div>
-      </section>
 
       {message && <p className="text-sm">{message}</p>}
     </main>

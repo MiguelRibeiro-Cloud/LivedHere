@@ -49,6 +49,11 @@ async def auth_callback(token: str = Query(min_length=10), db: AsyncSession = De
         user = User(email=token_obj.email, role=UserRole.ADMIN if token_obj.email == settings.admin_email else UserRole.USER)
         db.add(user)
         await db.flush()
+    else:
+        # If the configured admin email logs in and was previously created as USER,
+        # upgrade it so admin access works without wiping the DB.
+        if user.email == settings.admin_email and user.role != UserRole.ADMIN:
+            user.role = UserRole.ADMIN
 
     token_obj.used_at = utcnow()
     session_token = create_jwt(str(user.id))

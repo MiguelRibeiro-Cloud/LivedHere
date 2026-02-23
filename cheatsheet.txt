@@ -6,6 +6,10 @@ URLs
 - Admin login: http://localhost:5173/en/auth/login
 - Admin reviews: http://localhost:5173/en/admin/reviews
 
+Temp login shortcut emails
+- Admin: admin@example.com (must match ADMIN_EMAIL in docker-compose.yml)
+- User: user@example.com
+
 Docker (recommended)
 - docker compose up --build
   Use: first run, or after Dockerfile/docker-compose.yml changes.

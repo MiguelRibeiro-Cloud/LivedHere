@@ -31,6 +31,19 @@ const ratingLabels: Record<keyof typeof initialRatings, string> = {
   construction_quality: 'Construction quality'
 };
 
+const ratingScale: Record<keyof typeof initialRatings, { min: string; max: string }> = {
+  people_noise: { min: 'constantly loud', max: 'peaceful and quiet' },
+  animal_noise: { min: 'frequent disturbance', max: 'rarely noticeable' },
+  insulation: { min: 'everything carries through', max: 'excellent sound isolation' },
+  pest_issues: { min: 'serious pest problems', max: 'never saw any pests' },
+  area_safety: { min: 'often feels unsafe', max: 'consistently feels safe' },
+  neighbourhood_vibe: { min: 'unpleasant atmosphere', max: 'great community vibe' },
+  outdoor_spaces: { min: 'none or unusable', max: 'excellent usable spaces' },
+  parking: { min: 'painfully difficult', max: 'easy and reliable' },
+  building_maintenance: { min: 'neglected and broken', max: 'well-maintained and responsive' },
+  construction_quality: { min: 'flimsy and drafty', max: 'solid and well-built' }
+};
+
 export function SubmitPage() {
   const { t, i18n } = useTranslation();
   const [searchParams] = useSearchParams();
@@ -183,8 +196,16 @@ export function SubmitPage() {
         ...ratings
       });
       setResult(response.data);
-    } catch {
-      setApiError('Sorry—something went wrong while submitting. Please try again in a moment.');
+    } catch (err: any) {
+      const status = err?.response?.status as number | undefined;
+      const detail = err?.response?.data?.detail as string | undefined;
+      if (status === 429) {
+        setApiError(`You're submitting too quickly. Please wait a bit and try again.${detail ? ` (${detail})` : ''}`);
+      } else if (typeof detail === 'string' && detail.trim()) {
+        setApiError(detail);
+      } else {
+        setApiError('Sorry—something went wrong while submitting. Please try again in a moment.');
+      }
     }
   }
 
@@ -319,6 +340,8 @@ export function SubmitPage() {
                   value={ratings[key]}
                   onChange={(value) => setRatings((prev) => ({ ...prev, [key]: value }))}
                   label={ratingLabels[key]}
+                  minLabel={ratingScale[key].min}
+                  maxLabel={ratingScale[key].max}
                 />
               </div>
             ))}
