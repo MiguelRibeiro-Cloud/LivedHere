@@ -1,0 +1,45 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cd \"c:\\\\Users\\\\MJSR\\\\Documents\\\\Cloud Projects\\\\LivedHere\\\\backend\"; python -m pytest tests/ -v --tb=short 2>&1 \\| Select-Object -First 60$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "pip": true,
+        "/^cd \"c:\\\\Users\\\\MJSR\\\\Documents\\\\Cloud Projects\\\\LivedHere\\\\backend\"; pip install pytest pytest-asyncio -q 2>\\$null; python -m pytest tests/ -v --tb=short$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd \"c:\\\\Users\\\\MJSR\\\\Documents\\\\Cloud Projects\\\\LivedHere\\\\backend\"; python -m pytest tests/test_pii_scanner\\.py tests/test_rate_limit_logic\\.py -v --tb=short$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd \"c:\\\\Users\\\\MJSR\\\\Documents\\\\Cloud Projects\\\\LivedHere\\\\backend\"; python -m pytest tests/test_gemini_search\\.py -v --tb=short$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd \"c:\\\\Users\\\\MJSR\\\\Documents\\\\Cloud Projects\\\\LivedHere\\\\backend\"; python -m pytest tests/test_gemini_search\\.py tests/test_pii_scanner\\.py -v --tb=short$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^python -c \"import pydantic; print\\(pydantic\\.__version__\\)\" 2>&1$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^python -m pip install pydantic pydantic-settings httpx python-dotenv 2>&1 \\| Select-Object -Last 3$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^python -m pip install pydantic pydantic-settings httpx python-dotenv 2>&1$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^python -c \"import pydantic; print\\('OK', pydantic\\.__version__\\)\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd \"c:\\\\Users\\\\MJSR\\\\Documents\\\\Cloud Projects\\\\LivedHere\\\\backend\"; python -m pytest tests/test_gemini_search\\.py tests/test_pii_scanner\\.py tests/test_rate_limit_logic\\.py -v --tb=short$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

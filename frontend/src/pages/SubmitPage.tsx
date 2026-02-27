@@ -18,34 +18,44 @@ const initialRatings = {
   construction_quality: 3
 };
 
-const ratingLabels: Record<keyof typeof initialRatings, string> = {
-  people_noise: 'Noise from neighbors',
-  animal_noise: 'Noise from animals',
-  insulation: 'Sound insulation',
-  pest_issues: 'Pest problems',
-  area_safety: 'Area safety',
-  neighbourhood_vibe: 'Neighborhood vibe',
-  outdoor_spaces: 'Outdoor spaces',
-  parking: 'Parking availability',
-  building_maintenance: 'Building maintenance',
-  construction_quality: 'Construction quality'
-};
+type RatingKey = keyof typeof initialRatings;
 
-const ratingScale: Record<keyof typeof initialRatings, { min: string; max: string }> = {
-  people_noise: { min: 'constantly loud', max: 'peaceful and quiet' },
-  animal_noise: { min: 'frequent disturbance', max: 'rarely noticeable' },
-  insulation: { min: 'everything carries through', max: 'excellent sound isolation' },
-  pest_issues: { min: 'serious pest problems', max: 'never saw any pests' },
-  area_safety: { min: 'often feels unsafe', max: 'consistently feels safe' },
-  neighbourhood_vibe: { min: 'unpleasant atmosphere', max: 'great community vibe' },
-  outdoor_spaces: { min: 'none or unusable', max: 'excellent usable spaces' },
-  parking: { min: 'painfully difficult', max: 'easy and reliable' },
-  building_maintenance: { min: 'neglected and broken', max: 'well-maintained and responsive' },
-  construction_quality: { min: 'flimsy and drafty', max: 'solid and well-built' }
-};
+function useRatingLabels(): Record<RatingKey, string> {
+  const { t } = useTranslation();
+  return useMemo(() => ({
+    people_noise: t('rating_people_noise'),
+    animal_noise: t('rating_animal_noise'),
+    insulation: t('rating_insulation'),
+    pest_issues: t('rating_pest_issues'),
+    area_safety: t('rating_area_safety'),
+    neighbourhood_vibe: t('rating_neighbourhood_vibe'),
+    outdoor_spaces: t('rating_outdoor_spaces'),
+    parking: t('rating_parking'),
+    building_maintenance: t('rating_building_maintenance'),
+    construction_quality: t('rating_construction_quality')
+  }), [t]);
+}
+
+function useRatingScale(): Record<RatingKey, { min: string; max: string }> {
+  const { t } = useTranslation();
+  return useMemo(() => ({
+    people_noise: { min: t('rating_people_noise_min'), max: t('rating_people_noise_max') },
+    animal_noise: { min: t('rating_animal_noise_min'), max: t('rating_animal_noise_max') },
+    insulation: { min: t('rating_insulation_min'), max: t('rating_insulation_max') },
+    pest_issues: { min: t('rating_pest_issues_min'), max: t('rating_pest_issues_max') },
+    area_safety: { min: t('rating_area_safety_min'), max: t('rating_area_safety_max') },
+    neighbourhood_vibe: { min: t('rating_neighbourhood_vibe_min'), max: t('rating_neighbourhood_vibe_max') },
+    outdoor_spaces: { min: t('rating_outdoor_spaces_min'), max: t('rating_outdoor_spaces_max') },
+    parking: { min: t('rating_parking_min'), max: t('rating_parking_max') },
+    building_maintenance: { min: t('rating_building_maintenance_min'), max: t('rating_building_maintenance_max') },
+    construction_quality: { min: t('rating_construction_quality_min'), max: t('rating_construction_quality_max') }
+  }), [t]);
+}
 
 export function SubmitPage() {
   const { t, i18n } = useTranslation();
+  const ratingLabels = useRatingLabels();
+  const ratingScale = useRatingScale();
   const [searchParams] = useSearchParams();
   const placeParam = (searchParams.get('place') ?? '').trim();
   const [fromYear, setFromYear] = useState(2020);
@@ -99,10 +109,10 @@ export function SubmitPage() {
       const response = await api.get<GeocodeResult[]>('/geocode', { params: { q: trimmed } });
       setPlaceResults(response.data);
       if (response.data.length === 0) {
-        setPlaceError('No matches found. Try a broader search (city + street name).');
+        setPlaceError(t('submit_place_not_found'));
       }
     } catch {
-      setPlaceError('Sorry—search is unavailable right now. Please try again.');
+      setPlaceError(t('submit_place_unavailable'));
       setPlaceResults([]);
     }
   }, [placeQuery]);
@@ -117,48 +127,48 @@ export function SubmitPage() {
     const next: typeof errors = {};
 
     if (!selectedStreet) {
-      next.building = 'Please search and select a street before submitting.';
+      next.building = t('submit_err_building');
     }
 
     const hasDoor = typeof doorNumber === 'number' && Number.isFinite(doorNumber);
     if (!hasDoor) {
       if (!Number.isFinite(rangeStart) || rangeStart < 1 || rangeStart > 99999) {
-        next.range = 'Please enter a start number between 1 and 99999.';
+        next.range = t('submit_err_range_start');
       }
       if (!Number.isFinite(rangeEnd) || rangeEnd < 1 || rangeEnd > 99999) {
-        next.range = 'Please enter an end number between 1 and 99999.';
+        next.range = t('submit_err_range_end');
       }
       if (!next.range && rangeEnd < rangeStart) {
-        next.range = 'End number should be the same as or after start number.';
+        next.range = t('submit_err_range_start');
       }
       if (!next.range && rangeEnd - rangeStart > 500) {
-        next.range = 'Please keep the range within 500 numbers.';
+        next.range = t('submit_err_range_end');
       }
     }
 
     if (!Number.isFinite(fromYear) || fromYear < 1900 || fromYear > 2100) {
-      next.fromYear = 'Please enter a real year (e.g., 2019).';
+      next.fromYear = t('submit_err_year');
     }
 
     if (!Number.isFinite(toYear) || toYear < 1900 || toYear > 2100) {
-      next.toYear = 'Please enter a real year (e.g., 2024).';
+      next.toYear = t('submit_err_year');
     }
 
     if (!next.fromYear && !next.toYear && toYear < fromYear) {
-      next.toYear = '“To year” should be the same as or after “From year”.';
+      next.toYear = t('submit_err_year_order');
     }
 
     if (!Number.isFinite(durationMonths) || durationMonths <= 0 || durationMonths > 600) {
-      next.durationMonths = 'Please enter a duration between 1 and 600 months.';
+      next.durationMonths = t('submit_err_duration');
     }
 
     if (comment.trim().length < 20) {
-      next.comment = 'A short note helps others—please write at least 20 characters.';
+      next.comment = t('submit_err_comment_short');
     }
 
     const effectiveComment = `${comment.trim()}\n\nStayed about ${durationMonths} month${durationMonths === 1 ? '' : 's'}.`;
     if (effectiveComment.length > 4000) {
-      next.comment = 'Your note is a bit too long. Please shorten it to fit within 4000 characters.';
+      next.comment = t('submit_err_comment_long');
     }
 
     setErrors(next);
@@ -200,11 +210,11 @@ export function SubmitPage() {
       const status = err?.response?.status as number | undefined;
       const detail = err?.response?.data?.detail as string | undefined;
       if (status === 429) {
-        setApiError(`You're submitting too quickly. Please wait a bit and try again.${detail ? ` (${detail})` : ''}`);
+        setApiError(t('submit_err_rate_limit') + (detail ? ` (${detail})` : ''));
       } else if (typeof detail === 'string' && detail.trim()) {
         setApiError(detail);
       } else {
-        setApiError('Sorry—something went wrong while submitting. Please try again in a moment.');
+        setApiError(t('submit_err_generic'));
       }
     }
   }
@@ -212,30 +222,30 @@ export function SubmitPage() {
   return (
     <main className="space-y-6">
       <section className="card">
-        <h1 className="text-2xl font-bold text-ink">Help others make better housing decisions.</h1>
-        <p className="mt-2 text-ink/75">Your review will be moderated and anonymized.</p>
+        <h1 className="text-2xl font-bold text-ink">{t('submit_title')}</h1>
+        <p className="mt-2 text-ink/75">{t('submit_subtitle')}</p>
       </section>
 
       <form className="space-y-6" onSubmit={submit}>
         <section className="card">
-          <h2 className="text-lg font-bold text-ink">About your stay</h2>
+          <h2 className="text-lg font-bold text-ink">{t('submit_about_stay')}</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-ink">Place</label>
+              <label className="block text-sm font-medium text-ink">{t('submit_place_label')}</label>
               <div className="mt-1 flex gap-2">
                 <input
                   className="input"
                   value={placeQuery}
                   onChange={(event) => setPlaceQuery(event.target.value)}
-                  placeholder="Search by street, area, or city…"
+                  placeholder={t('submit_place_placeholder')}
                 />
                 <button className="btn px-4" type="button" onClick={() => void searchPlaces()}>
-                  Find
+                  {t('submit_place_find')}
                 </button>
               </div>
               {selectedStreet && (
                 <p className="mt-2 text-sm text-ink/70">
-                  Selected: <span className="font-semibold text-ink">{selectedStreet.label}</span>
+                  {t('submit_place_selected')} <span className="font-semibold text-ink">{selectedStreet.label}</span>
                 </p>
               )}
               {errors.building && <p className="mt-1 text-sm text-red-700">{errors.building}</p>}
@@ -269,44 +279,44 @@ export function SubmitPage() {
 
               {selectedStreet && (
                 <div className="mt-4 grid gap-3 rounded-xl border border-slate-200 bg-white p-4">
-                  <p className="text-sm font-semibold text-ink">Choose a target on this street</p>
+                  <p className="text-sm font-semibold text-ink">{t('submit_choose_target')}</p>
                   <div className="grid gap-3 md:grid-cols-3">
                     <label className="text-sm text-ink/80">
-                      Door number (optional)
+                      {t('submit_door_number')}
                       <input
                         className="input mt-1"
                         type="number"
                         value={doorNumber}
                         onChange={(e) => setDoorNumber(e.target.value === '' ? '' : Number(e.target.value))}
-                        placeholder="e.g. 12"
+                        placeholder={t('submit_door_placeholder')}
                       />
                     </label>
                     <label className="text-sm text-ink/80">
-                      Range start
+                      {t('submit_range_start')}
                       <input className="input mt-1" type="number" value={rangeStart} onChange={(e) => setRangeStart(Number(e.target.value))} />
                     </label>
                     <label className="text-sm text-ink/80">
-                      Range end
+                      {t('submit_range_end')}
                       <input className="input mt-1" type="number" value={rangeEnd} onChange={(e) => setRangeEnd(Number(e.target.value))} />
                     </label>
                   </div>
                   <p className="text-xs text-ink/60">
-                    Leave door number blank to review a portion of the street (we’ll store it as a range).
+                    {t('submit_range_hint')}
                   </p>
                 </div>
               )}
 
-              <p className="mt-2 text-xs text-ink/60">Tip: If you can’t find the street, try searching by city + street name.</p>
+              <p className="mt-2 text-xs text-ink/60">{t('submit_place_tip')}</p>
             </div>
 
             <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-ink">From year</label>
+              <label className="block text-sm font-medium text-ink">{t('submit_from_year')}</label>
               <input className="input mt-1" type="number" value={fromYear} onChange={(event) => setFromYear(Number(event.target.value))} />
               {errors.fromYear && <p className="mt-1 text-sm text-red-700">{errors.fromYear}</p>}
             </div>
 
             <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-ink">To year</label>
+              <label className="block text-sm font-medium text-ink">{t('submit_to_year')}</label>
               <input className="input mt-1" type="number" value={toYear} onChange={(event) => setToYear(Number(event.target.value))} />
               {errors.toYear && <p className="mt-1 text-sm text-red-700">{errors.toYear}</p>}
             </div>
@@ -314,7 +324,7 @@ export function SubmitPage() {
 
           <div className="mt-4 grid gap-4 md:grid-cols-4">
             <div className="md:col-span-1">
-              <label className="block text-sm font-medium text-ink">Duration (months)</label>
+              <label className="block text-sm font-medium text-ink">{t('submit_duration')}</label>
               <input
                 className="input mt-1"
                 type="number"
@@ -324,14 +334,14 @@ export function SubmitPage() {
                 max={600}
               />
               {errors.durationMonths && <p className="mt-1 text-sm text-red-700">{errors.durationMonths}</p>}
-              <p className="mt-1 text-xs text-ink/60">Suggested: {suggestedDurationMonths || '—'} months (you can edit this).</p>
+              <p className="mt-1 text-xs text-ink/60">{t('submit_duration_suggested', { months: suggestedDurationMonths || '—' })}</p>
             </div>
           </div>
         </section>
 
         <section className="card">
-          <h2 className="text-lg font-bold text-ink">Your experience</h2>
-          <p className="mt-2 text-sm text-ink/70">Pick a rating from 1 to 5 for each topic.</p>
+          <h2 className="text-lg font-bold text-ink">{t('submit_experience')}</h2>
+          <p className="mt-2 text-sm text-ink/70">{t('submit_experience_hint')}</p>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             {(Object.keys(ratings) as Array<keyof typeof initialRatings>).map((key) => (
@@ -349,24 +359,25 @@ export function SubmitPage() {
         </section>
 
         <section className="card">
-          <h2 className="text-lg font-bold text-ink">Additional notes</h2>
-          <label className="mt-4 block text-sm font-medium text-ink">Anything else you'd like to share?</label>
+          <h2 className="text-lg font-bold text-ink">{t('submit_notes')}</h2>
+          <label className="mt-4 block text-sm font-medium text-ink">{t('submit_notes_label')}</label>
           <textarea
             className="input mt-1 min-h-32"
             value={comment}
             onChange={(event) => setComment(event.target.value)}
-            placeholder="Focus on what future residents should know. Please avoid names or personal details."
+            placeholder={t('submit_notes_placeholder')}
           />
           {errors.comment && <p className="mt-1 text-sm text-red-700">{errors.comment}</p>}
-          <p className="mt-2 text-xs text-ink/60">We’ll include your duration (months) with your note for clarity.</p>
+          <p className="mt-2 text-xs text-ink/60">{t('submit_notes_duration_hint')}</p>
         </section>
 
         <section className="card">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <button className="btn h-11 px-6 text-base" type="submit">
-              Submit review
+              {t('submit_button')}
             </button>
-            <p className="text-sm text-ink/70">All reviews are reviewed before publication.</p>
+            <p className="text-sm text-ink/70">{t('submit_all_reviewed')}</p>
+            <p className="mt-1 text-xs text-ink/60">{t('submit_privacy_notice')}</p>
           </div>
           {apiError && <p className="mt-3 text-sm text-red-700">{apiError}</p>}
         </section>
@@ -374,15 +385,15 @@ export function SubmitPage() {
 
       {result && (
         <section className="rounded-xl border border-slate-200 bg-white p-5">
-          <h2 className="text-lg font-bold text-ink">Thanks—your review was received.</h2>
-          <p className="mt-2 text-sm text-ink/70">Save these codes to check status or edit later.</p>
+          <h2 className="text-lg font-bold text-ink">{t('submit_success_title')}</h2>
+          <p className="mt-2 text-sm text-ink/70">{t('submit_success_hint')}</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl bg-sand p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink/60">Tracking code</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink/60">{t('submit_tracking_code')}</p>
               <p className="mt-1 font-mono text-sm text-ink">{result.tracking_code}</p>
             </div>
             <div className="rounded-xl bg-sand p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink/60">Edit token</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink/60">{t('submit_edit_token')}</p>
               <p className="mt-1 font-mono text-sm text-ink">{result.edit_token}</p>
             </div>
           </div>

@@ -7,8 +7,13 @@ from urllib.parse import urlparse
 from app.api import router as api_router
 from app.api.review_status import router as review_status_router
 from app.core.config import settings
+from app.core.database import AsyncSessionLocal
 
-app = FastAPI(title=settings.app_name)
+app = FastAPI(
+    title=settings.app_name,
+    description="Community-driven housing quality reviews — privacy-first, moderated, bilingual (EN/PT).",
+    version="1.1.0",
+)
 
 origins = [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]
 app.add_middleware(
@@ -49,7 +54,15 @@ async def security_headers(request: Request, call_next):
 
 @app.get("/health")
 async def health() -> dict:
-    return {"ok": True}
+    """Health check endpoint with optional DB connectivity verification."""
+    result: dict = {"ok": True, "version": "1.1.0"}
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute("SELECT 1")  # type: ignore[arg-type]
+        result["db"] = "connected"
+    except Exception:
+        result["db"] = "unreachable"
+    return result
 
 
 app.include_router(api_router)

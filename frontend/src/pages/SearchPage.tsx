@@ -25,10 +25,10 @@ export function SearchPage() {
 
   const runSearch = useCallback(
     async (q: string, verified: boolean) => {
-      const response = await api.get<SearchResult[]>('/search', {
+      const response = await api.get<{ results: SearchResult[]; corrected_query: string | null }>('/search', {
         params: { q, verified_only: verified, sort: 'recency' }
       });
-      setResults(response.data);
+      setResults(response.data.results);
     },
     []
   );
@@ -52,7 +52,7 @@ export function SearchPage() {
   return (
     <main className="space-y-4">
       <form onSubmit={onSearch} className="card space-y-3">
-        <input className="input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by street, area, or city…" />
+        <input className="input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('hero_search_placeholder')} />
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={verifiedOnly} onChange={(event) => setVerifiedOnly(event.target.checked)} />
           {t('verified_only')}

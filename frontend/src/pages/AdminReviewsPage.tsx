@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { api } from '../api/client';
 
 type Review = { id: number; status: string; comment: string; pii_flagged: boolean };
 
 export function AdminReviewsPage() {
+  const { t } = useTranslation();
   const [reviews, setReviews] = useState<Review[]>([]);
 
   async function load() {
@@ -27,12 +29,12 @@ export function AdminReviewsPage() {
         <article key={review.id} className="card space-y-2">
           <p className="font-semibold">#{review.id} · {review.status}</p>
           <p>{review.comment}</p>
-          <p>{review.pii_flagged ? '⚠️ PII flagged' : 'No PII flags'}</p>
+          <p>{review.pii_flagged ? t('admin_pii_flagged') : t('admin_no_pii')}</p>
           <div className="flex flex-wrap gap-2">
-            <button className="btn" onClick={() => moderate(review.id, 'approve')}>Approve</button>
-            <button className="btn" onClick={() => moderate(review.id, 'request-changes')}>Request changes</button>
-            <button className="btn-accent" onClick={() => moderate(review.id, 'reject')}>Reject</button>
-            <button className="btn-accent" onClick={() => moderate(review.id, 'remove')}>Remove</button>
+            <button className="btn" onClick={() => moderate(review.id, 'approve')}>{t('admin_approve')}</button>
+            <button className="btn" onClick={() => moderate(review.id, 'request-changes')}>{t('admin_request_changes')}</button>
+            <button className="btn-accent" onClick={() => moderate(review.id, 'reject')}>{t('admin_reject')}</button>
+            <button className="btn-accent" onClick={() => moderate(review.id, 'remove')}>{t('admin_remove')}</button>
           </div>
         </article>
       ))}

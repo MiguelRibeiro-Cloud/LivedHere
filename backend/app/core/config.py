@@ -30,5 +30,7 @@ class Settings(BaseSettings):
 
     cors_origins: str = Field(default="http://localhost:5173", alias="CORS_ORIGINS")
 
+    gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
+
 
 settings = Settings()

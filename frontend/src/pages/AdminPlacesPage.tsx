@@ -1,8 +1,10 @@
 import { FormEvent, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { api } from '../api/client';
 
 export function AdminPlacesPage() {
+  const { t } = useTranslation();
   const [message, setMessage] = useState('');
   const [form, setForm] = useState({
     country_code: 'PT',
@@ -39,7 +41,7 @@ export function AdminPlacesPage() {
             />
           </label>
         ))}
-        <button className="btn md:col-span-2" type="submit">Create / Upsert Place</button>
+        <button className="btn md:col-span-2" type="submit">{t('admin_create_place')}</button>
       </form>
       {message && <p className="mt-3 text-sm">{message}</p>}
     </main>

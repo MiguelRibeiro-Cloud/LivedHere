@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { Layout } from './components/Layout';
 import { RequireAdmin, RequireAuth } from './components/RouteGuards';
+import { AboutPage } from './pages/AboutPage';
 import { AccountPage } from './pages/AccountPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { AdminPlacesPage } from './pages/AdminPlacesPage';
@@ -12,6 +13,7 @@ import { BuildingPage } from './pages/BuildingPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { MapPage } from './pages/MapPage';
+import { PrivacyPage } from './pages/PrivacyPage';
 import { StatusPage } from './pages/StatusPage';
 import { SubmitPage } from './pages/SubmitPage';
 
@@ -28,6 +30,8 @@ export function App() {
         <Route path="submit" element={<SubmitPage />} />
         <Route path="status" element={<StatusPage />} />
         <Route path="status/:code" element={<StatusPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="about" element={<AboutPage />} />
         <Route path="auth/login" element={<LoginPage />} />
         <Route element={<RequireAuth />}>
           <Route path="account" element={<AccountPage />} />

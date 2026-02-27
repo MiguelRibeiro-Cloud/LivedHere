@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { api } from '../api/client';
@@ -37,7 +37,7 @@ type BuildingResponse = {
 
 export function BuildingPage() {
   const { t } = useTranslation();
-  const { id } = useParams();
+  const { id, locale } = useParams();
   const [data, setData] = useState<BuildingResponse | null>(null);
   const [expandedReviewId, setExpandedReviewId] = useState<number | null>(null);
   const [openReportFor, setOpenReportFor] = useState<number | null>(null);
@@ -52,7 +52,7 @@ export function BuildingPage() {
   async function report(reviewId: number, event: FormEvent) {
     event.preventDefault();
     await api.post('/reports', { review_id: reviewId, reason });
-    setReportNote('Thanks — report received.');
+    setReportNote(t('report') + ' ✓');
     setOpenReportFor(null);
   }
 
@@ -74,7 +74,7 @@ export function BuildingPage() {
   const avgMaintenance = reviews.length ? avg(reviews.map((r) => r.building_maintenance)) : 0;
   const avgConstruction = reviews.length ? avg(reviews.map((r) => r.construction_quality)) : 0;
 
-  if (!data) return <main className="card">Loading…</main>;
+  if (!data) return <main className="card">{t('loading')}</main>;
 
   return (
     <main className="space-y-3">
@@ -84,6 +84,9 @@ export function BuildingPage() {
           {data.range_start != null && data.range_end != null ? `${data.range_start}–${data.range_end}` : data.street_number}
         </h1>
         <p className="mt-1 text-sm text-ink/70">{data.area}, {data.city}</p>
+        <Link className="mt-2 inline-block text-sm font-semibold text-primary underline" to={`/${locale}/submit`}>
+          {t('building_submit_review')}
+        </Link>
       </section>
 
       {reportNote && <section className="card"><p className="text-sm text-ink/70">{reportNote}</p></section>}
@@ -91,50 +94,50 @@ export function BuildingPage() {
       <section className="card space-y-4">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-ink">Average ratings</p>
-            <p className="mt-1 text-sm text-ink/70">Based on {reviews.length} review{reviews.length === 1 ? '' : 's'}.</p>
+            <p className="text-sm font-semibold text-ink">{t('building_avg_ratings')}</p>
+            <p className="mt-1 text-sm text-ink/70">{reviews.length === 1 ? t('building_based_on', { count: reviews.length }) : t('building_based_on_plural', { count: reviews.length })}</p>
           </div>
           {reviews.length > 0 && (
             <div className="text-right">
               <p className="text-2xl font-bold text-ink">{avgOverall.toFixed(2)}</p>
-              <p className="text-xs font-semibold text-ink/60">overall</p>
+              <p className="text-xs font-semibold text-ink/60">{t('building_overall')}</p>
             </div>
           )}
         </div>
 
         {reviews.length === 0 ? (
-          <p className="text-sm text-ink/70">No reviews yet.</p>
+          <p className="text-sm text-ink/70">{t('building_no_reviews')}</p>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgPeople)} label="Noise from neighbors" readOnly />
+              <StarRating value={Math.round(avgPeople)} label={t('rating_people_noise')} readOnly />
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgAnimal)} label="Noise from animals" readOnly />
+              <StarRating value={Math.round(avgAnimal)} label={t('rating_animal_noise')} readOnly />
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgInsulation)} label="Sound insulation" readOnly />
+              <StarRating value={Math.round(avgInsulation)} label={t('rating_insulation')} readOnly />
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgPests)} label="Pest problems" readOnly />
+              <StarRating value={Math.round(avgPests)} label={t('rating_pest_issues')} readOnly />
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgSafety)} label="Area safety" readOnly />
+              <StarRating value={Math.round(avgSafety)} label={t('rating_area_safety')} readOnly />
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgVibe)} label="Neighborhood vibe" readOnly />
+              <StarRating value={Math.round(avgVibe)} label={t('rating_neighbourhood_vibe')} readOnly />
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgOutdoor)} label="Outdoor spaces" readOnly />
+              <StarRating value={Math.round(avgOutdoor)} label={t('rating_outdoor_spaces')} readOnly />
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgParking)} label="Parking availability" readOnly />
+              <StarRating value={Math.round(avgParking)} label={t('rating_parking')} readOnly />
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgMaintenance)} label="Building maintenance" readOnly />
+              <StarRating value={Math.round(avgMaintenance)} label={t('rating_building_maintenance')} readOnly />
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgConstruction)} label="Construction quality" readOnly />
+              <StarRating value={Math.round(avgConstruction)} label={t('rating_construction_quality')} readOnly />
             </div>
           </div>
         )}
@@ -142,7 +145,7 @@ export function BuildingPage() {
 
       {reviews.length > 0 && (
         <section className="card space-y-3">
-          <h2 className="text-sm font-semibold text-ink">Comments</h2>
+          <h2 className="text-sm font-semibold text-ink">{t('building_comments')}</h2>
           <div className="space-y-2">
             {reviews.map((review) => {
               const expanded = expandedReviewId === review.id;
@@ -161,9 +164,9 @@ export function BuildingPage() {
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-ink">⭐ {review.score.toFixed(2)}</p>
                         <p className="mt-1 text-sm text-ink/80">{review.comment}</p>
-                        <p className="mt-1 text-xs text-ink/60">Lived {review.lived_from_year}–{review.lived_to_year}{review.verified ? ' · Verified' : ''}</p>
+                        <p className="mt-1 text-xs text-ink/60">{t('building_lived', { from: review.lived_from_year, to: review.lived_to_year })}{review.verified ? ` · ${t('building_verified')}` : ''}</p>
                       </div>
-                      <span className="text-xs font-semibold text-ink/60">{expanded ? 'Hide' : 'Details'}</span>
+                      <span className="text-xs font-semibold text-ink/60">{expanded ? t('hide') : t('details')}</span>
                     </div>
                   </button>
 
@@ -171,8 +174,8 @@ export function BuildingPage() {
                     <div className="border-t border-slate-200 px-4 py-4 space-y-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-ink">Detailed scores</p>
-                          <p className="mt-1 text-xs text-ink/60">Click the flag to report this comment.</p>
+                          <p className="text-sm font-semibold text-ink">{t('building_detailed_scores')}</p>
+                          <p className="mt-1 text-xs text-ink/60">{t('building_report_hint')}</p>
                         </div>
                         <button
                           type="button"
@@ -189,45 +192,45 @@ export function BuildingPage() {
 
                       <div className="grid gap-3 md:grid-cols-2">
                         <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.people_noise} label="Noise from neighbors" readOnly />
+                          <StarRating value={review.people_noise} label={t('rating_people_noise')} readOnly />
                         </div>
                         <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.animal_noise} label="Noise from animals" readOnly />
+                          <StarRating value={review.animal_noise} label={t('rating_animal_noise')} readOnly />
                         </div>
                         <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.insulation} label="Sound insulation" readOnly />
+                          <StarRating value={review.insulation} label={t('rating_insulation')} readOnly />
                         </div>
                         <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.pest_issues} label="Pest problems" readOnly />
+                          <StarRating value={review.pest_issues} label={t('rating_pest_issues')} readOnly />
                         </div>
                         <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.area_safety} label="Area safety" readOnly />
+                          <StarRating value={review.area_safety} label={t('rating_area_safety')} readOnly />
                         </div>
                         <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.neighbourhood_vibe} label="Neighborhood vibe" readOnly />
+                          <StarRating value={review.neighbourhood_vibe} label={t('rating_neighbourhood_vibe')} readOnly />
                         </div>
                         <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.outdoor_spaces} label="Outdoor spaces" readOnly />
+                          <StarRating value={review.outdoor_spaces} label={t('rating_outdoor_spaces')} readOnly />
                         </div>
                         <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.parking} label="Parking availability" readOnly />
+                          <StarRating value={review.parking} label={t('rating_parking')} readOnly />
                         </div>
                         <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.building_maintenance} label="Building maintenance" readOnly />
+                          <StarRating value={review.building_maintenance} label={t('rating_building_maintenance')} readOnly />
                         </div>
                         <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.construction_quality} label="Construction quality" readOnly />
+                          <StarRating value={review.construction_quality} label={t('rating_construction_quality')} readOnly />
                         </div>
                       </div>
 
                       {openReportFor === review.id && (
                         <form onSubmit={(event) => report(review.id, event)} className="flex flex-wrap items-center gap-2">
                           <select className="input max-w-xs" value={reason} onChange={(event) => setReason(event.target.value)}>
-                            <option value="PII">PII</option>
-                            <option value="Harassment">Harassment</option>
-                            <option value="FalseInfo">FalseInfo</option>
-                            <option value="Spam">Spam</option>
-                            <option value="Other">Other</option>
+                            <option value="PII">{t('report_reason_PII')}</option>
+                            <option value="Harassment">{t('report_reason_Harassment')}</option>
+                            <option value="FalseInfo">{t('report_reason_FalseInfo')}</option>
+                            <option value="Spam">{t('report_reason_Spam')}</option>
+                            <option value="Other">{t('report_reason_Other')}</option>
                           </select>
                           <button className="btn-accent" type="submit">{t('report')}</button>
                           <button
@@ -235,7 +238,7 @@ export function BuildingPage() {
                             type="button"
                             onClick={() => setOpenReportFor(null)}
                           >
-                            Cancel
+                            {t('cancel')}
                           </button>
                         </form>
                       )}

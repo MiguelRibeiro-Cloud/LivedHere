@@ -1,24 +1,62 @@
+import logging
 import re
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import String, cast, desc, func, or_, select
+from sqlalchemy import String, and_, case, cast, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.entities import Area, Building, City, Review, Street, StreetSegment
 from app.models.enums import AuthorBadge, ReviewStatus
 from app.services.text import normalize_name
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
+# --------------- AI-powered query correction ---------------
 
-@router.get("/search")
-async def search(
-    q: str = Query(default="", min_length=0),
-    sort: str = Query(default="recency"),
-    verified_only: bool = False,
-    db: AsyncSession = Depends(get_db),
+_correction_cache: dict[str, str | None] = {}
+_CACHE_MAX = 256
+
+
+async def _ai_correct_query(q: str) -> str | None:
+    """Ask Gemini to fix a Portuguese address search query."""
+    if not settings.gemini_api_key:
+        return None
+
+    cache_key = normalize_name(q)
+    if cache_key in _correction_cache:
+        return _correction_cache[cache_key]
+
+    from app.services.gemini import generate_text
+
+    corrected = await generate_text(
+        prompt=(
+            "Fix this Portuguese address search. Add missing prepositions "
+            "(de, do, da, dos, das), articles, or fix typos. "
+            "Return ONLY the corrected text, nothing else.\n\n" + q
+        ),
+        max_tokens=60,
+        temperature=0.0,
+    )
+
+    # Manage cache size
+    if len(_correction_cache) >= _CACHE_MAX:
+        for k in list(_correction_cache)[: _CACHE_MAX // 2]:
+            del _correction_cache[k]
+    _correction_cache[cache_key] = corrected
+    return corrected
+
+
+async def _run_search(
+    q: str,
+    sort: str,
+    verified_only: bool,
+    db: AsyncSession,
 ) -> list[dict]:
+    """Core search logic — reusable for AI-corrected re-queries."""
     review_agg = (
         select(
             Review.building_id.label("building_id"),
@@ -50,6 +88,8 @@ async def search(
         .outerjoin(StreetSegment, Building.segment_id == StreetSegment.id)
         .outerjoin(review_agg_sq, review_agg_sq.c.building_id == Building.id)
     )
+
+    relevance_score = None
 
     if q:
         q_norm = normalize_name(q)
@@ -87,17 +127,37 @@ async def search(
                 matchers.append(Area.normalized_name.like(like_prefix))
                 matchers.append(City.normalized_name.like(like_prefix))
 
+        # Cross-field AND: ALL tokens must appear in combined street+area+city
+        if tokens:
+            concat_field = func.concat(
+                Street.normalized_name, ' ',
+                Area.normalized_name, ' ',
+                City.normalized_name,
+            )
+            matchers.append(and_(*[concat_field.like(f"%{tok}%") for tok in tokens]))
+
+            # Relevance score: prioritise results matching more query tokens
+            _tcases = [case((concat_field.like(f"%{tok}%"), 1), else_=0) for tok in tokens]
+            relevance_score = _tcases[0]
+            for _tc in _tcases[1:]:
+                relevance_score = relevance_score + _tc
+
         stmt = stmt.where(or_(*matchers))
 
     # When verified_only is enabled, keep previous behavior: only show addresses with verified reviews.
     if verified_only:
         stmt = stmt.where(func.coalesce(review_agg_sq.c.review_count, 0) > 0)
 
+    order_clauses: list = []
+    if relevance_score is not None:
+        order_clauses.append(desc(relevance_score))
     if sort == "top":
-        stmt = stmt.order_by(desc(func.coalesce(review_agg_sq.c.review_count, 0)))
+        order_clauses.append(desc(func.coalesce(review_agg_sq.c.review_count, 0)))
     else:
         # default "recency"
-        stmt = stmt.order_by(desc(review_agg_sq.c.last_review_at).nullslast(), desc(func.coalesce(review_agg_sq.c.review_count, 0)))
+        order_clauses.append(desc(review_agg_sq.c.last_review_at).nullslast())
+        order_clauses.append(desc(func.coalesce(review_agg_sq.c.review_count, 0)))
+    stmt = stmt.order_by(*order_clauses)
 
     rows = (await db.execute(stmt.limit(100))).all()
     results: list[dict] = []
@@ -120,6 +180,28 @@ async def search(
         )
 
     return results
+
+
+@router.get("/search")
+async def search(
+    q: str = Query(default="", min_length=0),
+    sort: str = Query(default="recency"),
+    verified_only: bool = False,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Search buildings with AI-powered query correction fallback."""
+    results = await _run_search(q, sort, verified_only, db)
+    corrected_query: str | None = None
+
+    # When no results, ask Gemini to fix missing prepositions / typos
+    if not results and q and len(q.strip()) >= 5:
+        corrected = await _ai_correct_query(q)
+        if corrected and normalize_name(corrected) != normalize_name(q):
+            corrected_query = corrected
+            results = await _run_search(corrected, sort, verified_only, db)
+            logger.info("AI corrected: %r -> %r (%d results)", q, corrected, len(results))
+
+    return {"results": results, "corrected_query": corrected_query}
 
 
 @router.get("/buildings/{building_id}")

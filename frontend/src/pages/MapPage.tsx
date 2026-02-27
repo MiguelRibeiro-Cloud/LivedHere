@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import { api } from '../api/client';
@@ -18,6 +19,11 @@ type SearchResult = {
   avg_score: number | null;
 };
 
+type SearchResponse = {
+  results: SearchResult[];
+  corrected_query: string | null;
+};
+
 type GeocodeResult = {
   label: string;
   lat: number;
@@ -29,6 +35,7 @@ type GeocodeResult = {
 };
 
 export function MapPage() {
+  const { t } = useTranslation();
   const { locale = 'en' } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -43,6 +50,7 @@ export function MapPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emptyNote, setEmptyNote] = useState<string | null>(null);
+  const [correctedQuery, setCorrectedQuery] = useState<string | null>(null);
 
   const [mapCenter, setMapCenter] = useState<[number, number]>([38.7223, -9.1393]);
   const [mapZoom, setMapZoom] = useState(11);
@@ -61,16 +69,29 @@ export function MapPage() {
       setLoading(true);
       setError(null);
       setEmptyNote(null);
+      setCorrectedQuery(null);
       setGeoResults([]);
       setActiveId(null);
       try {
         const [dbRes, geoRes] = await Promise.allSettled([
-          api.get<SearchResult[]>('/search', { params: { q, verified_only: verified, sort: 'recency' } }),
+          api.get<SearchResponse>('/search', { params: { q, verified_only: verified, sort: 'recency' } }),
           api.get<GeocodeResult[]>('/geocode', { params: { q } }),
         ]);
 
-        const list = dbRes.status === 'fulfilled' ? dbRes.value.data : [];
-        const geoItems = geoRes.status === 'fulfilled' ? geoRes.value.data : [];
+        const searchData = dbRes.status === 'fulfilled' ? dbRes.value.data : null;
+        const list = searchData?.results ?? [];
+        const aiCorrected = searchData?.corrected_query ?? null;
+        let geoItems = geoRes.status === 'fulfilled' ? geoRes.value.data : [];
+
+        // If AI corrected the query and geocode was empty, re-geocode with corrected text
+        if (aiCorrected && geoItems.length === 0) {
+          try {
+            const correctedGeo = await api.get<GeocodeResult[]>('/geocode', { params: { q: aiCorrected } });
+            geoItems = correctedGeo.data;
+          } catch { /* keep original empty */ }
+        }
+
+        setCorrectedQuery(aiCorrected);
 
         setResults(list);
         setGeoResults(geoItems);
@@ -85,7 +106,7 @@ export function MapPage() {
           setPanZoom(15);
           setActiveId(null);
           if (list.length === 0) {
-            setEmptyNote('No reviewed places found yet. Pick a street below to submit the first review.');
+            setEmptyNote(t('map_empty_note_geo'));
           }
         } else if (first) {
           setPanTo([first.lat, first.lng]);
@@ -94,12 +115,13 @@ export function MapPage() {
           // IMPORTANT: do NOT pan back to the default view on empty results.
           setPanTo(null);
           setPanZoom(null);
-          setEmptyNote('No matches found. Try a broader search (city + street name).');
+          setEmptyNote(t('map_empty_note_none'));
         }
       } catch {
-        setError('Could not search right now. Please try again.');
+        setError(t('map_error'));
         setResults([]);
         setGeoResults([]);
+        setCorrectedQuery(null);
         setActiveId(null);
         setPanTo(null);
         setPanZoom(null);
@@ -124,6 +146,7 @@ export function MapPage() {
       setActiveId(null);
       setError(null);
       setEmptyNote(null);
+      setCorrectedQuery(null);
       setPanTo(null);
       setPanZoom(null);
       return;
@@ -168,19 +191,19 @@ export function MapPage() {
   return (
     <main className="space-y-4">
       <section className="card">
-        <h1 className="text-xl font-bold text-ink">Search and explore</h1>
-        <p className="mt-1 text-sm text-ink/70">Search by street, area, or city to jump the map to matching places.</p>
+        <h1 className="text-xl font-bold text-ink">{t('map_title')}</h1>
+        <p className="mt-1 text-sm text-ink/70">{t('map_subtitle')}</p>
 
         <form onSubmit={onSubmit} className="mt-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
           <input
             className="input h-11"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by street, area, or city…"
-            aria-label="Search"
+            placeholder={t('map_search_placeholder')}
+            aria-label={t('map_search_button')}
           />
           <button className="btn h-11 px-6" type="submit" disabled={loading}>
-            {loading ? 'Searching…' : 'Search'}
+            {loading ? t('map_searching') : t('map_search_button')}
           </button>
         </form>
 
@@ -190,10 +213,15 @@ export function MapPage() {
             checked={verifiedOnly}
             onChange={(event) => setVerifiedOnly(event.target.checked)}
           />
-          Verified accounts only
+          {t('verified_only')}
         </label>
 
         {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
+        {!error && correctedQuery && (
+          <p className="mt-3 text-sm text-ink/70">
+            {t('map_ai_corrected')} <strong>{correctedQuery}</strong>
+          </p>
+        )}
         {!error && emptyNote && <p className="mt-3 text-sm text-ink/70">{emptyNote}</p>}
       </section>
 
@@ -201,13 +229,13 @@ export function MapPage() {
         <div className="space-y-3">
           {results.length === 0 && geoResults.length === 0 ? (
             <section className="card">
-              <p className="text-sm text-ink/70">Search to see matching places and jump the map.</p>
+              <p className="text-sm text-ink/70">{t('map_empty_search')}</p>
             </section>
           ) : (
             <>
               {results.length > 0 && (
                 <section className="card">
-                  <h2 className="text-sm font-semibold text-ink">Results</h2>
+                  <h2 className="text-sm font-semibold text-ink">{t('map_results')}</h2>
                   <div className="mt-3 space-y-2">
                     {results.slice(0, 12).map((item) => (
                       <button
@@ -231,7 +259,7 @@ export function MapPage() {
                           {item.review_count > 0 && item.avg_score != null ? (
                             <span>⭐ {item.avg_score.toFixed(1)} ({item.review_count})</span>
                           ) : (
-                            <span>No reviews yet</span>
+                            <span>{t('map_no_reviews_yet')}</span>
                           )}
                         </p>
                         <Link
@@ -239,7 +267,7 @@ export function MapPage() {
                           to={`/${locale}/building/${item.building_id}`}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          View building
+                          {t('view_building')}
                         </Link>
                       </button>
                     ))}
@@ -249,8 +277,8 @@ export function MapPage() {
 
               {geoResults.length > 0 && (
                 <section className="card">
-                  <h2 className="text-sm font-semibold text-ink">Streets</h2>
-                  <p className="mt-2 text-sm text-ink/70">Map jumps here even if there are no reviews yet.</p>
+                  <h2 className="text-sm font-semibold text-ink">{t('map_streets')}</h2>
+                  <p className="mt-2 text-sm text-ink/70">{t('map_streets_note')}</p>
                   <div className="mt-3 space-y-2">
                     {geoResults.slice(0, 8).map((item) => {
                       const key = `${item.country_code ?? ''}-${item.city_name ?? ''}-${item.street_name ?? ''}-${item.lat}-${item.lng}`;
@@ -265,13 +293,13 @@ export function MapPage() {
                             }}
                           >
                             <p className="font-semibold text-ink">{item.label}</p>
-                            <p className="mt-1 text-sm text-ink/70">No reviews yet</p>
+                            <p className="mt-1 text-sm text-ink/70">{t('map_no_reviews_yet')}</p>
                           </button>
                           <Link
                             className="mt-2 inline-block text-sm font-semibold text-primary underline"
                             to={`/${locale}/submit?place=${encodeURIComponent(item.label)}`}
                           >
-                            Submit review
+                            {t('submit_review')}
                           </Link>
                         </div>
                       );
@@ -300,7 +328,7 @@ export function MapPage() {
               Map: {mapCenter[0].toFixed(4)}, {mapCenter[1].toFixed(4)} · z{mapZoom}
             </span>
             {results.length === 0 && qParam && !error && (
-              <span>Showing all buildings (no matches).</span>
+              <span>{t('map_showing_all')}</span>
             )}
           </div>
         </section>
