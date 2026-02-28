@@ -1,0 +1,19 @@
+FROM postgres:16-alpine
+
+# The postgres image already includes pg_dump, pg_restore, psql, pg_isready.
+# We only need bash (included in alpine) and coreutils for date.
+
+RUN apk add --no-cache bash coreutils
+
+WORKDIR /db-tools
+
+COPY db-tools/export.sh         /db-tools/export.sh
+COPY db-tools/restore.sh        /db-tools/restore.sh
+COPY db-tools/listen-and-export.sh /db-tools/listen-and-export.sh
+COPY db-tools/setup-triggers.sql   /db-tools/setup-triggers.sql
+COPY db-tools/entrypoint.sh     /db-tools/entrypoint.sh
+
+RUN chmod +x /db-tools/*.sh
+
+ENTRYPOINT ["/db-tools/entrypoint.sh"]
+CMD ["listen"]

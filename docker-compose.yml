@@ -44,6 +44,28 @@ services:
       timeout: 5s
       retries: 10
 
+  # ── DB Tools (auto-export & restore) ─────────────────────
+  db-tools:
+    build:
+      context: .
+      dockerfile: Dockerfile.db-tools
+    container_name: livedhere-db-tools
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      DEBOUNCE_SECONDS: "30"
+    volumes:
+      - db_dumps:/dumps
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy   # wait for migrations to finish
+
   # ── Nginx frontend ───────────────────────────────────────
   web:
     build:
@@ -59,3 +81,4 @@ services:
 
 volumes:
   postgres_data:
+  db_dumps:
