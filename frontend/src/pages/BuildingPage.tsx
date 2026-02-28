@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -74,6 +74,19 @@ export function BuildingPage() {
   const avgMaintenance = reviews.length ? avg(reviews.map((r) => r.building_maintenance)) : 0;
   const avgConstruction = reviews.length ? avg(reviews.map((r) => r.construction_quality)) : 0;
 
+  const ratingScale = useMemo(() => [
+    { key: 'people_noise'         as keyof Review, label: t('rating_people_noise'),          minLabel: t('rating_people_noise_min'),          maxLabel: t('rating_people_noise_max'),          avg: avgPeople },
+    { key: 'animal_noise'         as keyof Review, label: t('rating_animal_noise'),          minLabel: t('rating_animal_noise_min'),          maxLabel: t('rating_animal_noise_max'),          avg: avgAnimal },
+    { key: 'insulation'           as keyof Review, label: t('rating_insulation'),            minLabel: t('rating_insulation_min'),            maxLabel: t('rating_insulation_max'),            avg: avgInsulation },
+    { key: 'pest_issues'         as keyof Review, label: t('rating_pest_issues'),           minLabel: t('rating_pest_issues_min'),           maxLabel: t('rating_pest_issues_max'),           avg: avgPests },
+    { key: 'area_safety'         as keyof Review, label: t('rating_area_safety'),           minLabel: t('rating_area_safety_min'),           maxLabel: t('rating_area_safety_max'),           avg: avgSafety },
+    { key: 'neighbourhood_vibe'  as keyof Review, label: t('rating_neighbourhood_vibe'),    minLabel: t('rating_neighbourhood_vibe_min'),    maxLabel: t('rating_neighbourhood_vibe_max'),    avg: avgVibe },
+    { key: 'outdoor_spaces'      as keyof Review, label: t('rating_outdoor_spaces'),        minLabel: t('rating_outdoor_spaces_min'),        maxLabel: t('rating_outdoor_spaces_max'),        avg: avgOutdoor },
+    { key: 'parking'             as keyof Review, label: t('rating_parking'),               minLabel: t('rating_parking_min'),               maxLabel: t('rating_parking_max'),               avg: avgParking },
+    { key: 'building_maintenance' as keyof Review, label: t('rating_building_maintenance'), minLabel: t('rating_building_maintenance_min'), maxLabel: t('rating_building_maintenance_max'), avg: avgMaintenance },
+    { key: 'construction_quality' as keyof Review, label: t('rating_construction_quality'), minLabel: t('rating_construction_quality_min'), maxLabel: t('rating_construction_quality_max'), avg: avgConstruction },
+  ], [t, avgPeople, avgAnimal, avgInsulation, avgPests, avgSafety, avgVibe, avgOutdoor, avgParking, avgMaintenance, avgConstruction]);
+
   if (!data) return <main className="card">{t('loading')}</main>;
 
   return (
@@ -109,36 +122,17 @@ export function BuildingPage() {
           <p className="text-sm text-ink/70">{t('building_no_reviews')}</p>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgPeople)} label={t('rating_people_noise')} readOnly />
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgAnimal)} label={t('rating_animal_noise')} readOnly />
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgInsulation)} label={t('rating_insulation')} readOnly />
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgPests)} label={t('rating_pest_issues')} readOnly />
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgSafety)} label={t('rating_area_safety')} readOnly />
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgVibe)} label={t('rating_neighbourhood_vibe')} readOnly />
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgOutdoor)} label={t('rating_outdoor_spaces')} readOnly />
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgParking)} label={t('rating_parking')} readOnly />
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgMaintenance)} label={t('rating_building_maintenance')} readOnly />
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <StarRating value={Math.round(avgConstruction)} label={t('rating_construction_quality')} readOnly />
-            </div>
+            {ratingScale.map((r) => (
+              <div key={String(r.key)} className="rounded-xl border border-slate-200 bg-white p-4">
+                <StarRating
+                  value={Math.round(r.avg)}
+                  label={r.label}
+                  minLabel={r.minLabel}
+                  maxLabel={r.maxLabel}
+                  readOnly
+                />
+              </div>
+            ))}
           </div>
         )}
       </section>
@@ -191,36 +185,17 @@ export function BuildingPage() {
                       </div>
 
                       <div className="grid gap-3 md:grid-cols-2">
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.people_noise} label={t('rating_people_noise')} readOnly />
-                        </div>
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.animal_noise} label={t('rating_animal_noise')} readOnly />
-                        </div>
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.insulation} label={t('rating_insulation')} readOnly />
-                        </div>
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.pest_issues} label={t('rating_pest_issues')} readOnly />
-                        </div>
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.area_safety} label={t('rating_area_safety')} readOnly />
-                        </div>
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.neighbourhood_vibe} label={t('rating_neighbourhood_vibe')} readOnly />
-                        </div>
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.outdoor_spaces} label={t('rating_outdoor_spaces')} readOnly />
-                        </div>
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.parking} label={t('rating_parking')} readOnly />
-                        </div>
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.building_maintenance} label={t('rating_building_maintenance')} readOnly />
-                        </div>
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <StarRating value={review.construction_quality} label={t('rating_construction_quality')} readOnly />
-                        </div>
+                        {ratingScale.map((r) => (
+                          <div key={String(r.key)} className="rounded-xl border border-slate-200 bg-white p-4">
+                            <StarRating
+                              value={review[r.key] as number}
+                              label={r.label}
+                              minLabel={r.minLabel}
+                              maxLabel={r.maxLabel}
+                              readOnly
+                            />
+                          </div>
+                        ))}
                       </div>
 
                       {openReportFor === review.id && (

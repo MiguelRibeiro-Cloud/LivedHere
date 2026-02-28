@@ -25,8 +25,8 @@ function Star({ filled }: { filled: boolean }) {
 export function StarRating({ value, onChange, label, readOnly: readOnlyProp, minLabel, maxLabel }: StarRatingProps) {
   const readOnly = Boolean(readOnlyProp) || !onChange;
 
-  const helperText = !readOnly
-    ? `1 = ${minLabel ?? 'very bad'}, 5 = ${maxLabel ?? 'very good'}`
+  const helperText = (minLabel && maxLabel)
+    ? `1 = ${minLabel}, 5 = ${maxLabel}`
     : null;
 
   return (

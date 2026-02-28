@@ -75,6 +75,19 @@
   "map_error": "Could not search right now. Please try again.",
   "map_showing_all": "Showing all buildings (no matches).",
 
+  "map_mode_find": "Find Reviews",
+  "map_mode_find_hint": "Click on the map to discover reviews at that location.",
+  "map_mode_write": "Write a Review",
+  "map_mode_write_hint": "Click on the map to select an address and write a review.",
+  "map_mode_active_label": "Active",
+  "map_pin_loading": "Finding address…",
+  "map_pin_no_address": "No street found at this location. Try clicking closer to a road.",
+  "map_pin_error": "Could not look up this location. Please try again.",
+  "map_pin_write_review": "Write a review here",
+  "map_pin_view_reviews": "View reviews",
+  "map_pin_no_reviews": "No reviews yet at this address.",
+  "map_pin_be_first": "Be the first to review!",
+
   "building_avg_ratings": "Average ratings",
   "building_based_on": "Based on {{count}} review.",
   "building_based_on_plural": "Based on {{count}} reviews.",
@@ -261,7 +274,10 @@
   "assistant_title": "AI Assistant",
   "assistant_placeholder": "Ask about a place or how LivedHere works…",
   "assistant_send": "Send",
-  "assistant_welcome": "Hi! I can help you find housing reviews or answer questions about LivedHere. Try asking about a street or neighbourhood!",
+  "assistant_welcome": "Hi! I can help you find housing reviews or answer questions about LivedHere. Try asking about a street or neighbourhood, or tap a suggestion below!",
   "assistant_search_on_map": "Search on Map",
-  "assistant_error": "Something went wrong. Please try again."
+  "assistant_error": "Something went wrong. Please try again.",
+  "assistant_rate_limit": "You're sending too many messages. Please wait a moment.",
+  "assistant_unavailable": "The AI assistant is temporarily unavailable. Please try again later.",
+  "assistant_clear": "Clear chat"
 }

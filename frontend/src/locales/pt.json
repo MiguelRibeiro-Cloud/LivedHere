@@ -75,6 +75,19 @@
   "map_error": "Não foi possível pesquisar agora. Por favor, tente novamente.",
   "map_showing_all": "A mostrar todos os edifícios (sem correspondência).",
 
+  "map_mode_find": "Encontrar Avaliações",
+  "map_mode_find_hint": "Clique no mapa para descobrir avaliações nesse local.",
+  "map_mode_write": "Escrever Avaliação",
+  "map_mode_write_hint": "Clique no mapa para selecionar um endereço e escrever uma avaliação.",
+  "map_mode_active_label": "Ativo",
+  "map_pin_loading": "A encontrar endereço…",
+  "map_pin_no_address": "Nenhuma rua encontrada neste local. Tente clicar mais perto de uma estrada.",
+  "map_pin_error": "Não foi possível localizar este ponto. Por favor, tente novamente.",
+  "map_pin_write_review": "Escrever avaliação aqui",
+  "map_pin_view_reviews": "Ver avaliações",
+  "map_pin_no_reviews": "Ainda sem avaliações neste endereço.",
+  "map_pin_be_first": "Seja o primeiro a avaliar!",
+
   "building_avg_ratings": "Classificações médias",
   "building_based_on": "Com base em {{count}} avaliação.",
   "building_based_on_plural": "Com base em {{count}} avaliações.",
@@ -261,7 +274,10 @@
   "assistant_title": "Assistente IA",
   "assistant_placeholder": "Pergunte sobre um local ou como funciona o LivedHere…",
   "assistant_send": "Enviar",
-  "assistant_welcome": "Olá! Posso ajudá-lo a encontrar avaliações de alojamento ou responder a perguntas sobre o LivedHere. Experimente perguntar sobre uma rua ou bairro!",
+  "assistant_welcome": "Olá! Posso ajudá-lo a encontrar avaliações de alojamento ou responder a perguntas sobre o LivedHere. Experimente perguntar sobre uma rua ou bairro, ou toque numa sugestão abaixo!",
   "assistant_search_on_map": "Pesquisar no Mapa",
-  "assistant_error": "Algo correu mal. Por favor, tente novamente."
+  "assistant_error": "Algo correu mal. Por favor, tente novamente.",
+  "assistant_rate_limit": "Está a enviar demasiadas mensagens. Por favor, aguarde um momento.",
+  "assistant_unavailable": "O assistente IA está temporariamente indisponível. Por favor, tente mais tarde.",
+  "assistant_clear": "Limpar conversa"
 }

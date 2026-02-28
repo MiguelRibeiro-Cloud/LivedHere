@@ -92,6 +92,43 @@ export function SubmitPage() {
     comment?: string;
   }>({});
 
+  // ---- Auto-fill from map click URL params ----
+  const streetParam = (searchParams.get('street') ?? '').trim();
+  const cityParam = (searchParams.get('city') ?? '').trim();
+  const areaParam = (searchParams.get('area') ?? '').trim();
+  const countryParam = (searchParams.get('country') ?? '').trim();
+  const latParam = searchParams.get('lat');
+  const lngParam = searchParams.get('lng');
+  const doorParam = searchParams.get('door');
+
+  useEffect(() => {
+    if (streetParam && cityParam && latParam && lngParam) {
+      const lat = parseFloat(latParam);
+      const lng = parseFloat(lngParam);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        const autoStreet: GeocodeResult = {
+          label: `${streetParam} · ${areaParam || cityParam}, ${cityParam}`,
+          country_code: countryParam || 'PT',
+          city_name: cityParam,
+          area_name: areaParam || cityParam,
+          street_name: streetParam,
+          lat,
+          lng,
+        };
+        setSelectedStreet(autoStreet);
+        setPlaceQuery(streetParam + ', ' + cityParam);
+
+        // Auto-fill door number if provided
+        if (doorParam) {
+          const doorNum = parseInt(doorParam, 10);
+          if (Number.isFinite(doorNum) && doorNum > 0) {
+            setDoorNumber(doorNum);
+          }
+        }
+      }
+    }
+  }, [streetParam, cityParam, areaParam, countryParam, latParam, lngParam, doorParam]);
+
   const suggestedDurationMonths = useMemo(() => {
     if (!Number.isFinite(fromYear) || !Number.isFinite(toYear)) return 0;
     if (toYear < fromYear) return 0;

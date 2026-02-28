@@ -21,3 +21,13 @@ body {
 .input {
   @apply w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-ink placeholder:text-ink/50;
 }
+
+/* Map pin mode: crosshair cursor */
+.leaflet-container.pin-mode {
+  cursor: crosshair !important;
+}
+
+/* Hue-rotated marker for clicked point (blue → purple/red) */
+.hue-rotate-\[200deg\] {
+  filter: hue-rotate(200deg) saturate(1.5) brightness(1.1);
+}

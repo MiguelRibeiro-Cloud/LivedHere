@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -8,6 +8,14 @@ const icon = new L.Icon({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41]
+});
+
+const pinIcon = new L.Icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  className: 'hue-rotate-[200deg] saturate-150 brightness-110'
 });
 
 export type BuildingPin = {
@@ -42,12 +50,22 @@ function AutoPan({
   return null;
 }
 
-function ReportCenter({ onCenterChange }: { onCenterChange?: (center: [number, number], zoom: number) => void }) {
+function MapEvents({
+  onCenterChange,
+  onMapClick
+}: {
+  onCenterChange?: (center: [number, number], zoom: number) => void;
+  onMapClick?: (latlng: { lat: number; lng: number }) => void;
+}) {
   useMapEvents({
     moveend: (event) => {
       if (!onCenterChange) return;
       const center = event.target.getCenter();
       onCenterChange([center.lat, center.lng], event.target.getZoom());
+    },
+    click: (event) => {
+      if (!onMapClick) return;
+      onMapClick({ lat: event.latlng.lat, lng: event.latlng.lng });
     }
   });
   return null;
@@ -58,19 +76,35 @@ export function MapView({
   panTo = null,
   panZoom = null,
   onCenterChange,
-  onSelectBuilding
+  onSelectBuilding,
+  onMapClick,
+  clickedPoint,
+  pinMode = false
 }: {
   buildings: BuildingPin[];
   panTo?: [number, number] | null;
   panZoom?: number | null;
   onCenterChange?: (center: [number, number], zoom: number) => void;
   onSelectBuilding?: (id: number) => void;
+  onMapClick?: (latlng: { lat: number; lng: number }) => void;
+  clickedPoint?: { lat: number; lng: number; label?: string } | null;
+  pinMode?: boolean;
 }) {
   return (
-    <MapContainer center={[38.7223, -9.1393]} zoom={11} className="h-[520px] w-full rounded-xl">
+    <MapContainer
+      center={[38.7223, -9.1393]}
+      zoom={11}
+      className={`h-[520px] w-full rounded-xl${pinMode ? ' pin-mode' : ''}`}
+    >
       <AutoPan panTo={panTo} panZoom={panZoom} />
-      <ReportCenter onCenterChange={onCenterChange} />
+      <MapEvents onCenterChange={onCenterChange} onMapClick={onMapClick} />
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+
+      {/* Temporary pin from map click — no popup, info is in the sidebar */}
+      {clickedPoint && (
+        <Marker position={[clickedPoint.lat, clickedPoint.lng]} icon={pinIcon} />
+      )}
+
       {buildings.map((building) => (
         <Marker
           key={building.id}
@@ -83,11 +117,7 @@ export function MapView({
                 }
               : undefined
           }
-        >
-          <Popup>
-            Building #{building.id} {building.number ? `· ${building.number}` : ''}
-          </Popup>
-        </Marker>
+        />
       ))}
     </MapContainer>
   );
