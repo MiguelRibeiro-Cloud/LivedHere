@@ -53,14 +53,18 @@ Most important:
 - `APP_URL`
 - `SEND_REAL_EMAIL`
 - `CAPTCHA_PROVIDER` (`none`, `turnstile`, `recaptcha`)
-- `ADMIN_EMAIL`
+- `ADMIN_EMAILS` (comma-separated admin allowlist)
 
 ## Auth behavior
 
 - `POST /auth/request-link` creates a single-use 15-minute token
 - Token is hashed in DB (`magic_link_tokens`)
 - `GET /auth/callback` validates token, provisions user (or reuses existing), sets `lh_session` cookie
+- Users in `ADMIN_EMAILS` are always mapped to `ADMIN`; all others are mapped to `USER`
+- Admin access is email-code based only (no password flow)
+- Frontend login uses a single email form and redirects by role (`ADMIN` → admin reviews, `USER` → account)
 - In dev mode (`SEND_REAL_EMAIL=false`), the link is logged and returned as `dev_link`
+- Admin accounts cannot self-delete via `DELETE /me` (admin membership is env-managed)
 
 ## API overview
 
@@ -107,7 +111,34 @@ Search & map:
 Seed script creates:
 - Portugal (`PT`)
 - Lisboa and Porto examples with one sample building each
-- Admin user from `ADMIN_EMAIL`
+- Admin users from `ADMIN_EMAILS`
+
+## Email login setup (Brevo SMTP)
+
+This app sends login magic links over SMTP using `aiosmtplib`.
+
+1. In Brevo, verify a sender (single sender or domain).
+2. Generate an SMTP key in **SMTP & API**.
+3. Set these variables:
+
+```dotenv
+SEND_REAL_EMAIL=true
+EMAIL_HOST=smtp-relay.brevo.com
+EMAIL_PORT=587
+EMAIL_USER=<your-brevo-smtp-login>
+EMAIL_PASS=<your-generated-brevo-smtp-key>
+EMAIL_FROM=<your-verified-sender-email>
+```
+
+Local development (recommended):
+
+```dotenv
+ENVIRONMENT=development
+APP_URL=http://localhost:5173
+CORS_ORIGINS=http://localhost:5173
+```
+
+`APP_URL` is used to build magic links (`/en/auth/login?token=...`).
 
 ## Tests
 
@@ -223,6 +254,27 @@ This makes dumps directly accessible on the host filesystem for cloud backup (Az
 - **Azure Blob Storage**: Add an `azcopy` or `az storage blob upload` step to `export.sh` to automatically push each dump to blob storage.
 - **Restore on deploy**: Run `docker compose run --rm db-tools restore` as a deployment step before starting the API, or include it in a CI/CD pipeline.
 - The debounce interval can be tuned via the `DEBOUNCE_SECONDS` environment variable (default: 30).
+
+### Azure Container Apps (app env vars)
+
+Set these as container environment variables/secrets for the API service:
+
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `ENVIRONMENT=production`
+- `SEND_REAL_EMAIL=true`
+- `EMAIL_HOST=smtp-relay.brevo.com`
+- `EMAIL_PORT=587`
+- `EMAIL_USER` (Brevo SMTP login)
+- `EMAIL_PASS` (Brevo SMTP key)
+- `EMAIL_FROM` (verified sender)
+- `ADMIN_EMAILS=miguel.js.ribeiro@outlook.com,migueljsribeiro10@gmail.com`
+
+URL guidance:
+
+- `APP_URL` must be the public frontend URL users open in browser (used in magic-link emails).
+- `CORS_ORIGINS` must include frontend origin(s), comma-separated if multiple.
+- `VITE_API_URL` is only needed when frontend and backend are on different public origins. If frontend proxies `/api` on same origin, keep default `/api`.
 
 ### Configuration
 

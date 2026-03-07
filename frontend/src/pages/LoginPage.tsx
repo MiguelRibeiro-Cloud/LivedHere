@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { api } from '../api/client';
+import type { Me } from '../hooks/useMe';
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -11,80 +12,97 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [searchParams] = useSearchParams();
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+
+  function destinationForRole(role: Me['role']) {
+    return role === 'ADMIN' ? `/${locale}/admin/reviews` : `/${locale}/account`;
+  }
+
+  function extractErrorMessage(err: unknown): string {
+    const status = (err as any)?.response?.status;
+    const detail = (err as any)?.response?.data?.detail;
+    if (typeof detail === 'string' && status) {
+      return `${t('error_generic')} (${status}: ${detail})`;
+    }
+    if (status) {
+      return `${t('error_generic')} (${status})`;
+    }
+    return t('error_generic');
+  }
 
   async function requestLink(event: FormEvent) {
     event.preventDefault();
-    const response = await api.post('/auth/request-link', { email });
-    setMessage(response.data.dev_link ? `Dev link: ${response.data.dev_link}` : t('login_check_email'));
+    setSending(true);
+    setError('');
+    setMessage('');
+    try {
+      const response = await api.post('/auth/request-link', { email: email.trim().toLowerCase() });
+      setMessage(response.data.dev_link ? `Dev link: ${response.data.dev_link}` : t('login_check_email'));
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    } finally {
+      setSending(false);
+    }
   }
 
   useEffect(() => {
     const token = searchParams.get('token');
-    if (!token) return;
-    api.get('/auth/callback', { params: { token } }).then(() => setMessage(t('login_authenticated')));
-  }, [searchParams]);
-
-  async function devLoginAs(targetEmail: string, redirectTo: string) {
-    setMessage('Signing in…');
-    try {
-      const response = await api.post('/auth/request-link', { email: targetEmail });
-      const devLink: string | null | undefined = response.data?.dev_link;
-      if (!devLink) {
-        setMessage('Dev link not available. Check API logs for DEV_MAGIC_LINK.');
-        return;
-      }
-      const token = new URL(devLink).searchParams.get('token');
-      if (!token) {
-        setMessage('Dev link did not include a token.');
-        return;
-      }
-      await api.get('/auth/callback', { params: { token } });
-      navigate(redirectTo, { replace: true });
-    } catch (err: any) {
-      const detail = err?.response?.data?.detail;
-      const status = err?.response?.status;
-      if (status && detail) {
-        const rendered = typeof detail === 'string' ? detail : JSON.stringify(detail);
-        setMessage(`Could not sign in (${status}): ${rendered}`);
-        return;
-      }
-      if (status) {
-        setMessage(`Could not sign in (${status}).`);
-        return;
-      }
-      setMessage('Could not sign in right now.');
+    if (!token) {
+      api
+        .get<Me>('/me')
+        .then((response) => navigate(destinationForRole(response.data.role), { replace: true }))
+        .catch(() => undefined);
+      return;
     }
-  }
+
+    setVerifying(true);
+    setError('');
+    setMessage(t('login_verifying'));
+
+    api
+      .get('/auth/callback', { params: { token } })
+      .then(() => api.get<Me>('/me'))
+      .then((response) => {
+        setMessage(t('login_authenticated'));
+        navigate(destinationForRole(response.data.role), { replace: true });
+      })
+      .catch((err) => {
+        setMessage('');
+        setError(extractErrorMessage(err));
+      })
+      .finally(() => setVerifying(false));
+  }, [searchParams, navigate, locale, t]);
 
   return (
-    <main className="card space-y-3">
+    <main className="card space-y-3" aria-busy={sending || verifying}>
       <section className="space-y-1">
         <h1 className="text-xl font-bold text-ink">{t('login_title')}</h1>
         <p className="text-sm text-ink/70">{t('login_subtitle')}</p>
-      </section>
-
-      <section className="rounded-xl border border-slate-200 bg-white p-4">
-        <p className="text-sm font-semibold text-ink">{t('login_dev_modes')}</p>
-        <p className="mt-1 text-xs text-ink/60">{t('login_dev_modes_desc')}</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button className="btn" type="button" onClick={() => navigate(`/${locale}/search`)}>
-            {t('login_continue_anonymous')}
-          </button>
-          <button className="btn" type="button" onClick={() => void devLoginAs('user@example.com', `/${locale}/account`)}>
-            {t('login_as_user')}
-          </button>
-          <button className="btn" type="button" onClick={() => void devLoginAs('admin@example.com', `/${locale}/admin/reviews`)}>
-            {t('login_as_admin')}
-          </button>
-        </div>
+        <p className="text-xs text-ink/60">{t('login_single_flow_note')}</p>
+        <p className="text-xs text-ink/60">{t('login_same_browser_note')}</p>
       </section>
 
       <form onSubmit={requestLink} className="space-y-2">
-        <input className="input" value={email} onChange={(event) => setEmail(event.target.value)} placeholder={t('login_email_placeholder')} />
-        <button className="btn" type="submit">{t('request_magic')}</button>
+        <input
+          className="input"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder={t('login_email_placeholder')}
+          autoComplete="email"
+          type="email"
+          required
+          autoFocus
+          disabled={sending || verifying}
+        />
+        <button className="btn" type="submit" disabled={sending || verifying}>
+          {sending ? t('login_requesting') : t('request_magic')}
+        </button>
       </form>
 
-      {message && <p className="text-sm">{message}</p>}
+      {message && <p className="text-sm text-ink/80">{message}</p>}
+      {error && <p className="text-sm text-red-700">{error}</p>}
     </main>
   );
 }

@@ -12,7 +12,9 @@ from app.core.database import Base
 from app.models import *  # noqa: F401,F403
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.database_url.replace("+asyncpg", ""))
+url = settings.database_url.replace("+asyncpg", "")
+url = url.replace("ssl=require", "sslmode=require")
+config.set_main_option("sqlalchemy.url", url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

@@ -1,13 +1,15 @@
 import { Navigate, Outlet, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useMe } from '../hooks/useMe';
 
 export function RequireAuth() {
+  const { t } = useTranslation();
   const { locale = 'en' } = useParams();
   const { me, loading } = useMe();
 
   if (loading) {
-    return <main className="card">Checking session…</main>;
+    return <main className="card" aria-busy="true">{t('guard_check_session')}</main>;
   }
 
   if (!me) {
@@ -18,11 +20,12 @@ export function RequireAuth() {
 }
 
 export function RequireAdmin() {
+  const { t } = useTranslation();
   const { locale = 'en' } = useParams();
   const { me, loading } = useMe();
 
   if (loading) {
-    return <main className="card">Checking admin access…</main>;
+    return <main className="card" aria-busy="true">{t('guard_check_admin')}</main>;
   }
 
   if (!me) {

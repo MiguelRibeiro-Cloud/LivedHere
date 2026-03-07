@@ -49,9 +49,19 @@ async def seed() -> None:
                 )
                 db.add(building)
 
-        admin = (await db.execute(select(User).where(User.email == settings.admin_email))).scalar_one_or_none()
-        if not admin:
-            db.add(User(email=settings.admin_email, role=UserRole.ADMIN))
+        admin_emails = settings.admin_emails
+
+        current_admins = (await db.execute(select(User).where(User.role == UserRole.ADMIN))).scalars().all()
+        for admin_user in current_admins:
+            if admin_user.email.strip().lower() not in admin_emails:
+                admin_user.role = UserRole.USER
+
+        for admin_email in admin_emails:
+            admin = (await db.execute(select(User).where(User.email == admin_email))).scalar_one_or_none()
+            if not admin:
+                db.add(User(email=admin_email, role=UserRole.ADMIN))
+            elif admin.role != UserRole.ADMIN:
+                admin.role = UserRole.ADMIN
 
         await db.commit()
 

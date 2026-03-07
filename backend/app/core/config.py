@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     email_pass: str = Field(default="", alias="EMAIL_PASS")
     email_from: str = Field(default="noreply@livedhere.local", alias="EMAIL_FROM")
 
-    admin_email: str = Field(default="admin@example.com", alias="ADMIN_EMAIL")
+    admin_emails_raw: str = Field(default="admin@example.com", alias="ADMIN_EMAILS")
+    admin_email_legacy: str = Field(default="", alias="ADMIN_EMAIL")
 
     captcha_provider: str = Field(default="none", alias="CAPTCHA_PROVIDER")
     captcha_secret: str = Field(default="", alias="CAPTCHA_SECRET")
@@ -31,6 +32,22 @@ class Settings(BaseSettings):
     cors_origins: str = Field(default="http://localhost:5173", alias="CORS_ORIGINS")
 
     gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
+
+    @property
+    def admin_emails(self) -> set[str]:
+        raw_values = [self.admin_emails_raw]
+        if self.admin_email_legacy:
+            raw_values.append(self.admin_email_legacy)
+        normalized = {
+            email.strip().lower()
+            for chunk in raw_values
+            for email in chunk.split(",")
+            if email.strip()
+        }
+        return normalized
+
+    def is_admin_email(self, email: str) -> bool:
+        return email.strip().lower() in self.admin_emails
 
 
 settings = Settings()
