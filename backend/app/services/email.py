@@ -1,4 +1,5 @@
 import logging
+from email.message import EmailMessage
 
 import aiosmtplib
 
@@ -9,22 +10,24 @@ logger = logging.getLogger(__name__)
 
 async def send_magic_link_email(email: str, link: str) -> None:
     subject = "Your LivedHere magic sign-in link"
-    body = f"Click to sign in: {link}\n\nThis link expires in 15 minutes."
+    body = (
+        f"Click to sign in:\n\n{link}\n\n"
+        "This link expires in 15 minutes.\n\n"
+        "If you did not request this, you can safely ignore this email."
+    )
 
     if not settings.send_real_email:
         logger.info("DEV_MAGIC_LINK %s -> %s", email, link)
         return
 
-    message = (
-        f"From: {settings.email_from}\r\n"
-        f"To: {email}\r\n"
-        f"Subject: {subject}\r\n\r\n"
-        f"{body}"
-    )
+    msg = EmailMessage()
+    msg["From"] = settings.email_from
+    msg["To"] = email
+    msg["Subject"] = subject
+    msg.set_content(body)
 
     await aiosmtplib.send(
-        message,
-        recipients=[email],
+        msg,
         hostname=settings.email_host,
         port=settings.email_port,
         username=settings.email_user or None,
