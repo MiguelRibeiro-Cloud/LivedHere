@@ -24,6 +24,7 @@ async def send_magic_link_email(email: str, link: str) -> None:
 
     await aiosmtplib.send(
         message,
+        recipients=[email],
         hostname=settings.email_host,
         port=settings.email_port,
         username=settings.email_user or None,

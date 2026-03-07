@@ -103,7 +103,7 @@ export function Layout() {
               aria-controls="mobile-nav"
               onClick={() => setMobileOpen((prev) => !prev)}
             >
-              {mobileOpen ? '✕' : 'Menu'}
+              {mobileOpen ? t('menu_close') : t('menu_open')}
             </button>
           </div>
         </div>

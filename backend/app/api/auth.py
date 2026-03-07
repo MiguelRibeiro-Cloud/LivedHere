@@ -18,15 +18,16 @@ router = APIRouter(prefix="/auth")
 
 @router.post("/request-link")
 async def request_magic_link(payload: RequestLinkPayload, db: AsyncSession = Depends(get_db)) -> dict:
+    normalized_email = payload.email.strip().lower()
     token = random_token(32)
     token_hash = hash_token(token)
     expires_at = utcnow() + timedelta(minutes=15)
 
-    db.add(MagicLinkToken(email=payload.email, token_hash=token_hash, expires_at=expires_at))
+    db.add(MagicLinkToken(email=normalized_email, token_hash=token_hash, expires_at=expires_at))
     await db.commit()
 
     link = f"{settings.app_url}/en/auth/login?token={token}"
-    await send_magic_link_email(payload.email, link)
+    await send_magic_link_email(normalized_email, link)
 
     return {"ok": True, "dev_link": link if not settings.send_real_email else None}
 
@@ -45,15 +46,14 @@ async def auth_callback(token: str = Query(min_length=10), db: AsyncSession = De
 
     user_stmt = select(User).where(User.email == token_obj.email)
     user = (await db.execute(user_stmt)).scalar_one_or_none()
+    desired_role = UserRole.ADMIN if settings.is_admin_email(token_obj.email) else UserRole.USER
     if not user:
-        user = User(email=token_obj.email, role=UserRole.ADMIN if token_obj.email == settings.admin_email else UserRole.USER)
+        user = User(email=token_obj.email, role=desired_role)
         db.add(user)
         await db.flush()
     else:
-        # If the configured admin email logs in and was previously created as USER,
-        # upgrade it so admin access works without wiping the DB.
-        if user.email == settings.admin_email and user.role != UserRole.ADMIN:
-            user.role = UserRole.ADMIN
+        if user.role != desired_role:
+            user.role = desired_role
 
     token_obj.used_at = utcnow()
     session_token = create_jwt(str(user.id))
