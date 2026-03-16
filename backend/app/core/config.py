@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     app_name: str = "LivedHere API"
     api_prefix: str = "/api"
     environment: str = Field(default="development", alias="ENVIRONMENT")
-    app_url: str = Field(default="http://localhost:5173", alias="APP_URL")
+    app_url: str = Field(default="http://localhost:80", alias="APP_URL")
 
     database_url: str = Field(alias="DATABASE_URL")
 
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     captcha_provider: str = Field(default="none", alias="CAPTCHA_PROVIDER")
     captcha_secret: str = Field(default="", alias="CAPTCHA_SECRET")
 
-    cors_origins: str = Field(default="http://localhost:5173", alias="CORS_ORIGINS")
+    cors_origins: str = Field(default="http://localhost:80", alias="CORS_ORIGINS")
 
     gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
 

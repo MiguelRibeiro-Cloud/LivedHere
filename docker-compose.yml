@@ -27,8 +27,8 @@ services:
       - .env
     environment:
       DATABASE_URL: "postgresql+asyncpg://LivedHereadmin:TempPass12345@livedhere-pg-prod.postgres.database.azure.com:5432/postgres?ssl=require"
-      APP_URL: ${APP_URL:-http://localhost:5173}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      APP_URL: ${APP_URL:-http://localhost:80}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:80}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-admin@example.com}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       JWT_SECRET: ${JWT_SECRET:-replace_me_with_a_long_secret}
