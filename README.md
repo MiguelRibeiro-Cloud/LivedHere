@@ -36,7 +36,7 @@ This repository contains a production-minded MVP for LivedHere using a monorepo 
 2. Start everything:
 	- `docker compose up --build`
 3. Open apps:
-	- Frontend: `http://localhost:5173/en`
+	- Frontend: `http://localhost:80/en`
 	- API health: `http://localhost:8000/health`
 
 The API container automatically runs:
@@ -134,8 +134,8 @@ Local development (recommended):
 
 ```dotenv
 ENVIRONMENT=development
-APP_URL=http://localhost:5173
-CORS_ORIGINS=http://localhost:5173
+APP_URL=http://localhost:80
+CORS_ORIGINS=http://localhost:80
 ```
 
 `APP_URL` is used to build magic links (`/en/auth/login?token=...`).

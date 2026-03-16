@@ -16,7 +16,7 @@ async def test_send_magic_link_dev_mode_logs(monkeypatch, caplog) -> None:
     monkeypatch.setattr(settings, "send_real_email", False)
 
     with caplog.at_level("INFO"):
-        await email_service.send_magic_link_email("user@example.com", "http://localhost:5173/en/auth/login?token=abc")
+        await email_service.send_magic_link_email("user@example.com", "http://localhost:80/en/auth/login?token=abc")
 
     assert "DEV_MAGIC_LINK" in caplog.text
 
@@ -37,7 +37,7 @@ async def test_send_magic_link_real_mode_sends_email_message(monkeypatch) -> Non
     monkeypatch.setattr(settings, "email_from", "noreply@example.com")
     monkeypatch.setattr(email_service.aiosmtplib, "send", fake_send)
 
-    await email_service.send_magic_link_email("user@example.com", "http://localhost:5173/en/auth/login?token=abc")
+    await email_service.send_magic_link_email("user@example.com", "http://localhost:80/en/auth/login?token=abc")
 
     msg = captured["message"]
     # Must be a proper EmailMessage, not a raw string

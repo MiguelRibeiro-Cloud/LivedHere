@@ -1,10 +1,10 @@
 LivedHere – local dev cheatsheet
 
 URLs
-- Frontend: http://localhost:5173
+- Frontend: http://localhost:80
 - API health: http://localhost:8000/health
-- Admin login: http://localhost:5173/en/auth/login
-- Admin reviews: http://localhost:5173/en/admin/reviews
+- Admin login: http://localhost:80/en/auth/login
+- Admin reviews: http://localhost:80/en/admin/reviews
 
 Admin allowlist emails
 - Set `ADMIN_EMAILS` in `.env` (comma-separated), e.g.:
