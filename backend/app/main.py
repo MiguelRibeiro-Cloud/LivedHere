@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import RedirectResponse
 
 from urllib.parse import urlparse
 
@@ -32,6 +33,15 @@ if parsed_app_url.hostname:
     trusted_hosts.add(parsed_app_url.hostname)
 
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(trusted_hosts))
+
+
+@app.middleware("http")
+async def redirect_root_domain(request: Request, call_next):
+    if request.url.hostname == "livedhere.pt":
+        redirect_url = request.url.replace(netloc="www.livedhere.pt")
+        return RedirectResponse(url=str(redirect_url), status_code=301)
+
+    return await call_next(request)
 
 
 @app.middleware("http")
