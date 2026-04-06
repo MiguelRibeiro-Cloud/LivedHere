@@ -2,9 +2,11 @@ name: Deploy livedhere-api
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - "backend/**"
+      - "Dockerfile.api"
       - ".github/workflows/deploy-api.yml"
 
 jobs:
@@ -23,7 +25,8 @@ jobs:
       - name: Build and deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v1
         with:
-          appSourcePath: ${{ github.workspace }}/backend
+          appSourcePath: ${{ github.workspace }}
+          dockerfilePath: ./Dockerfile.api
           acrName: livedhereacrprod
           containerAppName: livedhere-api
           resourceGroup: rg-livedhere-prod
