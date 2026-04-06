@@ -28,3 +28,4 @@ jobs:
           containerAppName: livedhere-api
           resourceGroup: rg-livedhere-prod
           imageToBuild: livedhereacrprod.azurecr.io/livedhere-api:${{ github.sha }}
+          targetPort: 8000
