@@ -22,13 +22,14 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Build and deploy to Azure Container Apps
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          appSourcePath: ${{ github.workspace }}
-          dockerfilePath: ./Dockerfile.api
-          acrName: livedhereacrprod
-          containerAppName: livedhere-api
-          resourceGroup: rg-livedhere-prod
-          imageToBuild: livedhereacrprod.azurecr.io/livedhere-api:${{ github.sha }}
-          targetPort: 8000
+      - name: Log in to ACR
+        run: az acr login --name livedhereacrprod
+
+      - name: Build Docker image
+        run: docker build -f Dockerfile.api -t livedhereacrprod.azurecr.io/livedhere-api:${{ github.sha }} .
+
+      - name: Push Docker image
+        run: docker push livedhereacrprod.azurecr.io/livedhere-api:${{ github.sha }}
+
+      - name: Update Container App image
+        run: az containerapp update --name livedhere-api --resource-group rg-livedhere-prod --image livedhereacrprod.azurecr.io/livedhere-api:${{ github.sha }}
