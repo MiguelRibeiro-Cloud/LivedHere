@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.dependencies import require_admin
 from app.core.database import get_db
-from app.models.entities import Area, Building, City, Country, Street
+from app.core.security import place_selection_matches
+from app.models.entities import Area, Building, City, Country, Street, User
 from app.schemas.places import PlaceCreatePayload, PlaceResolvePayload
 from app.services.text import normalize_name
 
@@ -44,7 +46,7 @@ async def streets(area_id: int | None = None, db: AsyncSession = Depends(get_db)
 
 
 @router.post("/places/create")
-async def create_place(payload: PlaceCreatePayload, db: AsyncSession = Depends(get_db)) -> dict:
+async def create_place(payload: PlaceCreatePayload, db: AsyncSession = Depends(get_db), _: User = Depends(require_admin)) -> dict:
     country = (await db.execute(select(Country).where(Country.code == payload.country_code.upper()))).scalar_one_or_none()
     if not country:
         code = payload.country_code.upper()
@@ -108,6 +110,9 @@ async def resolve_place(payload: PlaceResolvePayload, db: AsyncSession = Depends
     If `street_number` is provided, creates/returns that exact building.
     Otherwise creates/returns a "segment building" representing a number range on the street.
     """
+
+    if not place_selection_matches(payload.selection_token, payload.model_dump()):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Place selection expired or invalid; search again")
 
     street_number = payload.street_number
     range_start = payload.range_start

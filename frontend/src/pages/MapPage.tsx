@@ -71,6 +71,7 @@ export function MapPage() {
     area_name?: string;
     country_code?: string;
     house_number?: string | null;
+    selection_token?: string;
   } | null>(null);
   const [reverseLoading, setReverseLoading] = useState(false);
   // Reviews found at the clicked point (find mode)
@@ -84,6 +85,7 @@ export function MapPage() {
     area_name: string;
     country_code: string;
     house_number?: string | null;
+    selection_token: string;
     lat: number;
     lng: number;
   };
@@ -127,6 +129,7 @@ export function MapPage() {
             area_name: res.data.area_name,
             country_code: res.data.country_code,
             house_number: res.data.house_number,
+            selection_token: res.data.selection_token,
           };
           setClickedPoint(point);
 
@@ -166,7 +169,7 @@ export function MapPage() {
   );
 
   function navigateToSubmit() {
-    if (!clickedPoint?.street_name) return;
+    if (!clickedPoint?.street_name || !clickedPoint.selection_token) return;
     const params = new URLSearchParams();
     params.set('street', clickedPoint.street_name);
     params.set('city', clickedPoint.city_name ?? '');
@@ -174,6 +177,7 @@ export function MapPage() {
     params.set('country', clickedPoint.country_code ?? '');
     params.set('lat', String(clickedPoint.lat));
     params.set('lng', String(clickedPoint.lng));
+    params.set('selection_token', clickedPoint.selection_token);
     if (clickedPoint.house_number) {
       params.set('door', clickedPoint.house_number);
     }

@@ -24,6 +24,7 @@ class BuildingResponse(BaseModel):
 
 
 class PlaceResolvePayload(BaseModel):
+    selection_token: str = Field(min_length=1, max_length=2048)
     country_code: str = Field(min_length=2, max_length=2)
     city_name: str = Field(min_length=2, max_length=120)
     area_name: str | None = Field(default=None, max_length=120)

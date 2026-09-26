@@ -74,6 +74,7 @@ export function SubmitPage() {
     city_name: string;
     area_name: string;
     street_name: string;
+    selection_token: string;
     lat: number;
     lng: number;
   };
@@ -99,10 +100,11 @@ export function SubmitPage() {
   const countryParam = (searchParams.get('country') ?? '').trim();
   const latParam = searchParams.get('lat');
   const lngParam = searchParams.get('lng');
+  const selectionTokenParam = searchParams.get('selection_token');
   const doorParam = searchParams.get('door');
 
   useEffect(() => {
-    if (streetParam && cityParam && latParam && lngParam) {
+    if (streetParam && cityParam && latParam && lngParam && selectionTokenParam) {
       const lat = parseFloat(latParam);
       const lng = parseFloat(lngParam);
       if (Number.isFinite(lat) && Number.isFinite(lng)) {
@@ -112,6 +114,7 @@ export function SubmitPage() {
           city_name: cityParam,
           area_name: areaParam || cityParam,
           street_name: streetParam,
+          selection_token: selectionTokenParam,
           lat,
           lng,
         };
@@ -127,7 +130,7 @@ export function SubmitPage() {
         }
       }
     }
-  }, [streetParam, cityParam, areaParam, countryParam, latParam, lngParam, doorParam]);
+  }, [streetParam, cityParam, areaParam, countryParam, latParam, lngParam, selectionTokenParam, doorParam]);
 
   const suggestedDurationMonths = useMemo(() => {
     if (!Number.isFinite(fromYear) || !Number.isFinite(toYear)) return 0;
@@ -223,6 +226,7 @@ export function SubmitPage() {
     try {
       const hasDoor = typeof doorNumber === 'number' && Number.isFinite(doorNumber);
       const resolveResponse = await api.post<{ building_id: number }>('/places/resolve', {
+        selection_token: selectedStreet!.selection_token,
         country_code: selectedStreet!.country_code,
         city_name: selectedStreet!.city_name,
         area_name: selectedStreet!.area_name,

@@ -6,6 +6,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.core.config import settings
+from app.core.security import create_place_selection_token
 
 router = APIRouter(prefix="/geocode")
 
@@ -130,6 +131,7 @@ async def geocode(q: str = Query(min_length=2, max_length=200)) -> list[dict]:
     for item in data:
         parsed = _parse_nominatim_item(item)
         if parsed:
+            parsed["selection_token"] = create_place_selection_token(parsed)
             results.append(parsed)
 
     return results
@@ -178,4 +180,7 @@ async def reverse_geocode(
     if not isinstance(data, dict):
         return None
 
-    return _parse_nominatim_item(data)
+    parsed = _parse_nominatim_item(data)
+    if parsed:
+        parsed["selection_token"] = create_place_selection_token({**parsed, "lat": lat, "lng": lng})
+    return parsed
