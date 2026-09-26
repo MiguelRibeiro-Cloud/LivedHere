@@ -11,6 +11,28 @@ os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://x:x@localhost/x")
 
 # ---- tests for the gemini service ----
 
+@pytest.mark.asyncio
+async def test_generate_calls_use_configured_model(monkeypatch):
+    import app.core.config as cfg
+    import app.services.gemini as gemini
+
+    urls = []
+
+    async def fake_call_api(url, body):
+        urls.append(url)
+        return "ok"
+
+    monkeypatch.setattr(cfg.settings, "gemini_api_key", "TEST_KEY")
+    monkeypatch.setattr(cfg.settings, "gemini_model", "configured-model")
+    monkeypatch.setattr(gemini, "_call_api", fake_call_api)
+
+    await gemini.generate_text("search query")
+    await gemini.generate_chat([{"role": "user", "text": "hello"}])
+
+    expected_url = "https://generativelanguage.googleapis.com/v1beta/models/configured-model:generateContent"
+    assert urls == [expected_url, expected_url]
+
+
 def test_generate_text_returns_none_without_api_key(monkeypatch):
     """When GEMINI_API_KEY is empty, generate_text should return None immediately."""
     import app.core.config as cfg

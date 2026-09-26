@@ -1,4 +1,4 @@
-"""AI assistant endpoint powered by Google Gemma 3 27B.
+"""AI assistant endpoint powered by the Google Gemini API.
 
 Provides a conversational interface that helps users search for places
 and learn about the LivedHere platform.  All LLM calls are proxied
@@ -213,7 +213,6 @@ async def chat(body: AssistantRequest, request: Request) -> AssistantResponse:
 
     raw = await generate_chat(
         messages,
-        model="gemma-3-27b-it",
         system=_SYSTEM,
         max_tokens=300,
         temperature=0.3,

@@ -21,7 +21,7 @@ _BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 async def generate_text(
     prompt: str,
     *,
-    model: str = "gemma-3-27b-it",
+    model: str | None = None,
     max_tokens: int = 100,
     temperature: float = 0.1,
     system: str | None = None,
@@ -35,6 +35,7 @@ async def generate_text(
     if not settings.gemini_api_key:
         return None
 
+    model = settings.gemini_model if model is None else model
     url = f"{_BASE}/{model}:generateContent"
 
     body: dict[str, Any] = {
@@ -65,7 +66,7 @@ async def generate_text(
 async def generate_chat(
     messages: list[dict[str, str]],
     *,
-    model: str = "gemma-3-27b-it",
+    model: str | None = None,
     max_tokens: int = 256,
     temperature: float = 0.3,
     system: str | None = None,
@@ -78,6 +79,7 @@ async def generate_chat(
     if not settings.gemini_api_key:
         return None
 
+    model = settings.gemini_model if model is None else model
     url = f"{_BASE}/{model}:generateContent"
 
     contents: list[dict[str, Any]] = []

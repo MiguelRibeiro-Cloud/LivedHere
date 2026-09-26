@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     cors_origins: str = Field(default="http://localhost:80", alias="CORS_ORIGINS")
 
     gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
+    gemini_model: str = Field(default="gemini-3.5-flash-lite", alias="GEMINI_MODEL")
 
     @property
     def admin_emails(self) -> set[str]:
