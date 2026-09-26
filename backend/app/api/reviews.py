@@ -34,6 +34,26 @@ def _score(payload: ReviewCreatePayload) -> tuple[float, int]:
     return overall, round(overall)
 
 
+def _scan_comment_pii(comment: str) -> tuple[bool, list[str]]:
+    flagged, reasons, blocked = scan_pii(comment)
+    if blocked:
+        blocked_types = [r for r in reasons if r in {"email", "phone", "nif", "citizen_card", "iban"}]
+        hint_map = {
+            "email": "email addresses",
+            "phone": "phone numbers",
+            "nif": "tax identification numbers (NIF)",
+            "citizen_card": "citizen card numbers",
+            "iban": "bank account numbers (IBAN)",
+        }
+        hints = ", ".join(hint_map.get(t, t) for t in blocked_types)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Your review contains personal data that must be removed for privacy: {hints}. "
+            "Please edit your comment and try again.",
+        )
+    return flagged, reasons
+
+
 @router.post("")
 async def create_review(
     payload: ReviewCreatePayload,
@@ -61,22 +81,7 @@ async def create_review(
     if current_user is None:
         await verify_captcha(payload.captcha_token, remote_ip)
 
-    flagged, reasons, blocked = scan_pii(payload.comment)
-    if blocked:
-        blocked_types = [r for r in reasons if r in {"email", "phone", "nif", "citizen_card", "iban"}]
-        hint_map = {
-            "email": "email addresses",
-            "phone": "phone numbers",
-            "nif": "tax identification numbers (NIF)",
-            "citizen_card": "citizen card numbers",
-            "iban": "bank account numbers (IBAN)",
-        }
-        hints = ", ".join(hint_map.get(t, t) for t in blocked_types)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Your review contains personal data that must be removed for privacy: {hints}. "
-            "Please edit your comment and try again.",
-        )
+    flagged, reasons = _scan_comment_pii(payload.comment)
 
     overall_score, rounded = _score(payload)
     tracking_code = random_token(8)[:12].upper()
@@ -163,8 +168,11 @@ async def update_review(
     if not allowed:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You cannot edit this review")
 
+    flagged, reasons = _scan_comment_pii(payload.comment)
     before = {"comment": review.comment, "status": review.status.value}
     review.comment = payload.comment
+    review.pii_flagged = flagged
+    review.pii_reasons = reasons
     review.status = ReviewStatus.PENDING
     review.moderation_message = None
     after = {"comment": review.comment, "status": review.status.value}
