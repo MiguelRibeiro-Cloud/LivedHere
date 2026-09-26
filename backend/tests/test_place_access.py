@@ -190,7 +190,11 @@ def test_signed_in_user_can_resolve_verified_place() -> None:
 )
 def test_production_rejects_missing_or_example_jwt_secret(monkeypatch, configured_secret: str | None) -> None:
     monkeypatch.delenv("JWT_SECRET", raising=False)
-    kwargs = {"DATABASE_URL": "postgresql+asyncpg://example:example@localhost/example", "ENVIRONMENT": "production"}
+    kwargs = {
+        "DATABASE_URL": "postgresql+asyncpg://example:example@localhost/example",
+        "ENVIRONMENT": "production",
+        "SEND_REAL_EMAIL": True,
+    }
     if configured_secret is not None:
         kwargs["JWT_SECRET"] = configured_secret
 
@@ -205,6 +209,7 @@ def test_production_accepts_configured_jwt_secret(monkeypatch) -> None:
         DATABASE_URL="postgresql+asyncpg://example:example@localhost/example",
         ENVIRONMENT="production",
         JWT_SECRET="example_for_this_test_only_32_characters",
+        SEND_REAL_EMAIL=True,
     )
     assert configured.environment == "production"
 

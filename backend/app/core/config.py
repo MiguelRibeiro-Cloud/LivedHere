@@ -47,6 +47,12 @@ class Settings(BaseSettings):
             raise ValueError("JWT_SECRET must be configured with a non-example value in production")
         return self
 
+    @model_validator(mode="after")
+    def require_production_email_delivery(self) -> "Settings":
+        if self.environment.strip().lower() == "production" and not self.send_real_email:
+            raise ValueError("SEND_REAL_EMAIL must be enabled in production")
+        return self
+
     @property
     def admin_emails(self) -> set[str]:
         raw_values = [self.admin_emails_raw]
