@@ -8,7 +8,7 @@ from app.auth.dependencies import get_current_user
 from app.core.database import get_db
 from app.core.security import hash_token, random_token, utcnow
 from app.models.entities import Building, Review, ReviewEditHistory, User
-from app.models.enums import AuthorBadge, AuthorType, EditorType, ReviewStatus
+from app.models.enums import AuthorBadge, AuthorType, EditorType, ReviewStatus, UserRole
 from app.pii.scanner import scan_pii
 from app.rate_limit.service import RateLimitExceeded, evaluate_rate_limit
 from app.schemas.reviews import ReviewCreatePayload, ReviewUpdatePayload
@@ -126,8 +126,11 @@ async def get_review(review_id: int, db: AsyncSession = Depends(get_db), current
     review = (await db.execute(select(Review).where(Review.id == review_id))).scalar_one_or_none()
     if not review:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
-    if review.status != ReviewStatus.APPROVED and current_user is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Review is not public")
+    can_view_unapproved = current_user is not None and (
+        current_user.role == UserRole.ADMIN or review.author_user_id == current_user.id
+    )
+    if review.status != ReviewStatus.APPROVED and not can_view_unapproved:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
 
     return {
         "id": review.id,
